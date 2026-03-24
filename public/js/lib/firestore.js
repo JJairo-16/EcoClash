@@ -1,4 +1,4 @@
-import { db } from "./config.js";
+import { db } from "../config.js";
 import {
   collection,
   addDoc,
@@ -133,4 +133,4 @@ export {
   updateById
 };
 
-export {db} from "./config.js";
+export {db} from "../config.js";
