@@ -25,7 +25,7 @@ import {
     validateDailyMisions,
     validateRequiredText,
     validateUserExtraData
-} from "./validators.js";
+} from "./user-validators.js";
 import {
     addExperienceToLevelState,
     getDefaultMaxExperience,
@@ -67,6 +67,7 @@ import {
  * @property {number} maxExperience Experiència màxima del nivell actual.
  * @property {number} experience Experiència actual dins del nivell.
  * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friends Array de referències a usuaris amics.
+ * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friendsRequest Array de referències a solicituds d'usuaris d'amistat.
  * @property {Date} dailyMissionsDate Data de la missió diària.
  * @property {Array<Object>} dailyMisions Array de missions diàries.
  * @property {UserSettings} settings Configuració de l'usuari.
@@ -76,6 +77,7 @@ import {
  * @typedef {Object} PublicUserUpdateData
  * @property {string} [phoneNum] Número de telèfon.
  * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} [friends] Array de referències a usuaris amics.
+ * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friendsRequest Array de referències a solicituds d'usuaris d'amistat. 
  * @property {Date} [dailyMissionsDate] Data de la missió diària.
  * @property {Array<Object>} [dailyMisions] Array de missions diàries.
  * @property {UserSettings} [settings] Configuració de l'usuari.
@@ -139,6 +141,7 @@ const LEVEL_STATE_FIELDS = new Set([
 const PUBLIC_UPDATE_FIELDS = new Set([
     "phoneNum",
     "friends",
+    "friendsRequest",
     "dailyMissionsDate",
     "dailyMisions",
     "settings"
@@ -251,6 +254,7 @@ async function buildNewUserData(user, extraData) {
         maxExperience: validateMaxExperience(getDefaultMaxExperience()),
         experience: 0,
         friends: [],
+        friendsRequest: [],
         dailyMissionsDate: new Date(),
         dailyMisions: [],
         settings: getDefaultUserSettings()
@@ -341,7 +345,7 @@ function sanitizePublicUserUpdateData(data) {
             case "phoneNum":
                 sanitizedData.phoneNum = validatePhoneNum(value);
                 break;
-            case "friends":
+            case "friends" | "friendsRequest":
                 sanitizedData.friends = validateFriends(value);
                 break;
             case "dailyMissionsDate":
