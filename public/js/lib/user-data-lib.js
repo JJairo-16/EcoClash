@@ -5,6 +5,7 @@ import {
     getDoc,
     getDocs,
     query,
+    runTransaction,
     setDoc,
     where
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -23,9 +24,17 @@ import {
     validateDailyMissionsDate,
     validateDailyMisions,
     validateRequiredText,
-    validateUserExtraData,
-    validatePartialUserData
+    validateUserExtraData
 } from "./validators.js";
+import {
+    addExperienceToLevelState,
+    getDefaultMaxExperience,
+    getProgressFromLevelState,
+    levelDownState,
+    levelUpState,
+    setExperienceInLevelState,
+    setLevelState
+} from "./level-manager.js";
 
 /**
  * @typedef {Object} UserExtraData
@@ -63,7 +72,77 @@ import {
  * @property {UserSettings} settings Configuració de l'usuari.
  */
 
+/**
+ * @typedef {Object} PublicUserUpdateData
+ * @property {string} [phoneNum] Número de telèfon.
+ * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} [friends] Array de referències a usuaris amics.
+ * @property {Date} [dailyMissionsDate] Data de la missió diària.
+ * @property {Array<Object>} [dailyMisions] Array de missions diàries.
+ * @property {UserSettings} [settings] Configuració de l'usuari.
+ */
+
+/**
+ * @typedef {Object} ProtectedUserUpdateData
+ * @property {string} [username] Nom d'usuari únic.
+ * @property {string} [name] Nom real.
+ * @property {string} [surname] Primer cognom.
+ * @property {string} [lastname] Segon cognom.
+ * @property {Date} [birthDate] Data de naixement.
+ * @property {string} [email] Correu electrònic.
+ * @property {number} [level] Nivell actual.
+ * @property {number} [maxExperience] Experiència màxima del nivell actual.
+ * @property {number} [experience] Experiència actual dins del nivell.
+ */
+
 const USERS_COLLECTION = "users";
+
+/**
+ * Camps protegits que no s'han de poder modificar des d'actualitzacions públiques.
+ * Inclou tota la informació personal excepte el telèfon, i també el sistema de nivell/XP.
+ */
+const PROTECTED_USER_FIELDS = new Set([
+    "username",
+    "name",
+    "surname",
+    "lastname",
+    "birthDate",
+    "email",
+    "level",
+    "maxExperience",
+    "experience"
+]);
+
+/**
+ * Camps estrictament personals de l'usuari.
+ */
+const PERSONAL_USER_FIELDS = new Set([
+    "username",
+    "name",
+    "surname",
+    "lastname",
+    "birthDate",
+    "email"
+]);
+
+/**
+ * Camps relacionats amb nivell/experiència.
+ */
+const LEVEL_STATE_FIELDS = new Set([
+    "level",
+    "maxExperience",
+    "experience"
+]);
+
+/**
+ * Camps públics permesos en actualitzacions normals.
+ */
+const PUBLIC_UPDATE_FIELDS = new Set([
+    "phoneNum",
+    "friends",
+    "dailyMissionsDate",
+    "dailyMisions",
+    "settings"
+]);
 
 /**
  * Retorna la configuració per defecte de l'usuari.
@@ -72,21 +151,28 @@ const USERS_COLLECTION = "users";
  * - notifications: true
  * - profilePrivacy: 2
  * - bigLetters: false
- * - darkTheme: null (imitar el sistema)
+ * - darkTheme: segons preferència del sistema quan està disponible
  *
  * @returns {UserSettings}
  */
 function getDefaultUserSettings() {
+    const supportsMatchMedia =
+        typeof globalThis !== "undefined" &&
+        typeof globalThis.matchMedia === "function";
+
     return {
         notifications: true,
         profilePrivacy: 2,
         bigLetters: false,
-        darkTheme: globalThis.matchMedia('(prefers-color-scheme: dark)').matches
+        darkTheme: supportsMatchMedia
+            ? globalThis.matchMedia("(prefers-color-scheme: dark)").matches
+            : null
     };
 }
 
 /**
  * Retorna la referència del document de l'usuari.
+ *
  * @param {string} uid
  * @returns {import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference}
  */
@@ -96,16 +182,56 @@ function getUserRef(uid) {
 }
 
 /**
+ * Comprova que l'usuari autenticat sigui vàlid.
+ *
+ * @param {import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").User | null} user
+ * @returns {string}
+ */
+function validateAuthUser(user) {
+    if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
+        throw new Error("L'usuari autenticat no és vàlid.");
+    }
+
+    return user.uid.trim();
+}
+
+/**
+ * Comprova que només hi hagi camps permesos.
+ *
+ * @param {Record<string, unknown>} data
+ * @param {Set<string>} allowedFields
+ * @param {string} errorPrefix
+ */
+function assertOnlyAllowedFields(data, allowedFields, errorPrefix) {
+    for (const key of Object.keys(data)) {
+        if (!allowedFields.has(key)) {
+            throw new Error(`${errorPrefix}: el camp "${key}" no es pot actualitzar aquí.`);
+        }
+    }
+}
+
+/**
+ * Comprova que cap camp protegit s'hagi inclòs en dades públiques.
+ *
+ * @param {Record<string, unknown>} data
+ */
+function assertNoProtectedFields(data) {
+    for (const key of Object.keys(data)) {
+        if (PROTECTED_USER_FIELDS.has(key)) {
+            throw new Error(`El camp "${key}" està protegit i no es pot actualitzar amb aquesta funció.`);
+        }
+    }
+}
+
+/**
  * Construeix i valida les dades inicials d'un nou usuari.
  *
  * @param {import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").User | null} user
  * @param {UserExtraData} extraData
- * @returns {UserDocument}
+ * @returns {Promise<UserDocument>}
  */
-function buildNewUserData(user, extraData) {
-    if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
-        throw new Error("L'usuari autenticat no és vàlid.");
-    }
+async function buildNewUserData(user, extraData) {
+    validateAuthUser(user);
 
     if (!user.email) {
         throw new Error("L'usuari autenticat no té un correu electrònic vàlid.");
@@ -122,7 +248,7 @@ function buildNewUserData(user, extraData) {
         birthDate: validateBirthDate(extraData.birthDate),
         email: validateEmail(user.email),
         level: 1,
-        maxExperience: 100,
+        maxExperience: validateMaxExperience(getDefaultMaxExperience()),
         experience: 0,
         friends: [],
         dailyMissionsDate: new Date(),
@@ -155,7 +281,7 @@ function sanitizeUserSettings(value) {
         switch (key) {
             case "notifications":
                 if (typeof fieldValue !== "boolean") {
-                    throw new TypeError("El camp \"notifications\" no és vàlid.");
+                    throw new TypeError('El camp "notifications" no és vàlid.');
                 }
                 sanitizedSettings.notifications = fieldValue;
                 break;
@@ -165,21 +291,21 @@ function sanitizeUserSettings(value) {
                     typeof fieldValue !== "number" ||
                     !Number.isInteger(fieldValue)
                 ) {
-                    throw new TypeError("El camp \"profilePrivacy\" no és vàlid.");
+                    throw new TypeError('El camp "profilePrivacy" no és vàlid.');
                 }
                 sanitizedSettings.profilePrivacy = fieldValue;
                 break;
 
             case "bigLetters":
                 if (typeof fieldValue !== "boolean") {
-                    throw new TypeError("El camp \"bigLetters\" no és vàlid.");
+                    throw new TypeError('El camp "bigLetters" no és vàlid.');
                 }
                 sanitizedSettings.bigLetters = fieldValue;
                 break;
 
             case "darkTheme":
                 if (fieldValue !== null && typeof fieldValue !== "boolean") {
-                    throw new Error("El camp \"darkTheme\" no és vàlid.");
+                    throw new TypeError('El camp "darkTheme" no és vàlid.');
                 }
                 sanitizedSettings.darkTheme = fieldValue;
                 break;
@@ -193,14 +319,64 @@ function sanitizeUserSettings(value) {
 }
 
 /**
- * Valida i normalitza dades parcials d'un usuari.
- * Només s'accepten camps existents al model.
+ * Valida i normalitza dades públiques actualitzables.
+ * No permet modificar cap camp protegit.
  *
- * @param {Partial<UserDocument>} data
+ * @param {PublicUserUpdateData} data
  * @returns {Partial<UserDocument>}
  */
-function sanitizeUserUpdateData(data) {
-    validatePartialUserData(data);
+function sanitizePublicUserUpdateData(data) {
+    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        throw new Error("Les dades de l'usuari no són vàlides.");
+    }
+
+    assertNoProtectedFields(data);
+    assertOnlyAllowedFields(data, PUBLIC_UPDATE_FIELDS, "Actualització no permesa");
+
+    /** @type {Partial<UserDocument>} */
+    const sanitizedData = {};
+
+    for (const [key, value] of Object.entries(data)) {
+        switch (key) {
+            case "phoneNum":
+                sanitizedData.phoneNum = validatePhoneNum(value);
+                break;
+            case "friends":
+                sanitizedData.friends = validateFriends(value);
+                break;
+            case "dailyMissionsDate":
+                sanitizedData.dailyMissionsDate = validateDailyMissionsDate(value);
+                break;
+            case "dailyMisions":
+                sanitizedData.dailyMisions = validateDailyMisions(value);
+                break;
+            case "settings":
+                sanitizedData.settings = {
+                    ...getDefaultUserSettings(),
+                    ...sanitizeUserSettings(value)
+                };
+                break;
+            default:
+                throw new Error(`El camp "${key}" no es pot actualitzar.`);
+        }
+    }
+
+    return sanitizedData;
+}
+
+/**
+ * Valida i normalitza dades protegides.
+ * Aquesta funció només s'ha d'utilitzar des de wrappers interns/controlats.
+ *
+ * @param {ProtectedUserUpdateData} data
+ * @returns {Partial<UserDocument>}
+ */
+function sanitizeProtectedUserUpdateData(data) {
+    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        throw new Error("Les dades protegides de l'usuari no són vàlides.");
+    }
+
+    assertOnlyAllowedFields(data, PROTECTED_USER_FIELDS, "Actualització protegida no permesa");
 
     /** @type {Partial<UserDocument>} */
     const sanitizedData = {};
@@ -219,9 +395,6 @@ function sanitizeUserUpdateData(data) {
             case "lastname":
                 sanitizedData.lastname = validateLastname(value);
                 break;
-            case "phoneNum":
-                sanitizedData.phoneNum = validatePhoneNum(value);
-                break;
             case "birthDate":
                 sanitizedData.birthDate = validateBirthDate(value);
                 break;
@@ -237,25 +410,44 @@ function sanitizeUserUpdateData(data) {
             case "experience":
                 sanitizedData.experience = validateExperience(value);
                 break;
-            case "friends":
-                sanitizedData.friends = validateFriends(value);
-                break;
-            case "dailyMissionsDate":
-                sanitizedData.dailyMissionsDate = validateDailyMissionsDate(value);
-                break;
-            case "dailyMisions":
-                sanitizedData.dailyMisions = validateDailyMisions(value);
-                break;
-            case "settings":
-                sanitizedData.settings = {
-                    ...getDefaultUserSettings(),
-                    ...sanitizeUserSettings(value)
-                };
-                break;
+            default:
+                throw new Error(`El camp protegit "${key}" no es pot actualitzar.`);
         }
     }
 
     return sanitizedData;
+}
+
+/**
+ * Valida i normalitza només les dades personals protegides.
+ *
+ * @param {Partial<Pick<UserDocument, "username" | "name" | "surname" | "lastname" | "birthDate" | "email">>} data
+ * @returns {Partial<UserDocument>}
+ */
+function sanitizePersonalUserUpdateData(data) {
+    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        throw new Error("Les dades personals de l'usuari no són vàlides.");
+    }
+
+    assertOnlyAllowedFields(data, PERSONAL_USER_FIELDS, "Actualització personal no permesa");
+
+    return sanitizeProtectedUserUpdateData(data);
+}
+
+/**
+ * Valida i normalitza només l'estat de nivell/experiència.
+ *
+ * @param {Partial<Pick<UserDocument, "level" | "maxExperience" | "experience">>} data
+ * @returns {Partial<UserDocument>}
+ */
+function sanitizeLevelStateUpdateData(data) {
+    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        throw new Error("L'estat de nivell no és vàlid.");
+    }
+
+    assertOnlyAllowedFields(data, LEVEL_STATE_FIELDS, "Actualització de nivell no permesa");
+
+    return sanitizeProtectedUserUpdateData(data);
 }
 
 /**
@@ -265,11 +457,8 @@ function sanitizeUserUpdateData(data) {
  * @returns {Promise<boolean>}
  */
 export async function userExists(user) {
-    if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
-        throw new Error("L'usuari autenticat no és vàlid.");
-    }
-
-    const snap = await getDoc(getUserRef(user.uid));
+    const uid = validateAuthUser(user);
+    const snap = await getDoc(getUserRef(uid));
     return snap.exists();
 }
 
@@ -331,6 +520,75 @@ export async function getUserData(uid) {
 }
 
 /**
+ * Obté només la informació protegida de l'usuari.
+ *
+ * @param {string} uid
+ * @returns {Promise<ProtectedUserUpdateData | null>}
+ */
+export async function getProtectedUserData(uid) {
+    const userData = await getUserData(uid);
+
+    if (!userData) {
+        return null;
+    }
+
+    return {
+        username: userData.username,
+        name: userData.name,
+        surname: userData.surname,
+        lastname: userData.lastname,
+        birthDate: userData.birthDate,
+        email: userData.email,
+        level: userData.level,
+        maxExperience: userData.maxExperience,
+        experience: userData.experience
+    };
+}
+
+/**
+ * Obté només les dades personals protegides de l'usuari.
+ *
+ * @param {string} uid
+ * @returns {Promise<Partial<Pick<UserDocument, "username" | "name" | "surname" | "lastname" | "birthDate" | "email">> | null>}
+ */
+export async function getPersonalUserData(uid) {
+    const userData = await getUserData(uid);
+
+    if (!userData) {
+        return null;
+    }
+
+    return {
+        username: userData.username,
+        name: userData.name,
+        surname: userData.surname,
+        lastname: userData.lastname,
+        birthDate: userData.birthDate,
+        email: userData.email
+    };
+}
+
+/**
+ * Obté només l'estat de nivell/experiència de l'usuari.
+ *
+ * @param {string} uid
+ * @returns {Promise<Pick<UserDocument, "level" | "maxExperience" | "experience"> | null>}
+ */
+export async function getUserLevelState(uid) {
+    const userData = await getUserData(uid);
+
+    if (!userData) {
+        return null;
+    }
+
+    return {
+        level: userData.level,
+        maxExperience: userData.maxExperience,
+        experience: userData.experience
+    };
+}
+
+/**
  * Obté la configuració d'un usuari.
  * Si el camp no existeix, retorna la configuració per defecte.
  *
@@ -362,9 +620,10 @@ export async function getUserSettings(uid) {
  * @returns {Promise<UserDocument>}
  */
 export async function addNewUser(user, extraData) {
-    const newUser = buildNewUserData(user, extraData);
+    const uid = validateAuthUser(user);
+    const newUser = await buildNewUserData(user, extraData);
 
-    if (await userExists(user)) {
+    if (await userUidExists(uid)) {
         throw new Error("Aquest usuari ja existeix.");
     }
 
@@ -376,45 +635,35 @@ export async function addNewUser(user, extraData) {
         throw new Error("El correu electrònic ja està en ús.");
     }
 
-    await setDoc(getUserRef(user.uid), newUser);
+    await setDoc(getUserRef(uid), newUser);
 
     return newUser;
 }
 
 /**
- * Actualitza parcialment les dades d'un usuari existent.
- * No permet afegir camps inexistents.
- * Utilitza `setDoc` amb `merge`.
+ * Actualitza parcialment només els camps públics/permesos d'un usuari.
+ *
+ * Camps protegits:
+ * - username, name, surname, lastname, birthDate, email
+ * - level, maxExperience, experience
  *
  * @param {string} uid
- * @param {Partial<UserDocument>} data
+ * @param {PublicUserUpdateData} data
  * @returns {Promise<void>}
  */
 export async function updateUserData(uid, data) {
-    const sanitizedData = sanitizeUserUpdateData(data);
-    const currentUser = await getUserData(uid);
+    const userRef = getUserRef(uid);
+    const sanitizedData = sanitizePublicUserUpdateData(data);
 
-    if (!currentUser) {
-        throw new Error("L'usuari no existeix.");
-    }
+    await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(userRef);
 
-    if (
-        sanitizedData.username &&
-        sanitizedData.username !== currentUser.username &&
-        await usernameExists(sanitizedData.username)
-    ) {
-        throw new Error("El nom d'usuari ja està en ús.");
-    }
+        if (!snap.exists()) {
+            throw new Error("L'usuari no existeix.");
+        }
 
-    if (
-        sanitizedData.email &&
-        sanitizedData.email !== currentUser.email &&
-        await emailExists(sanitizedData.email)
-    ) {
-        throw new Error("El correu electrònic ja està en ús.");
-    }
-
-    await setDoc(getUserRef(uid), sanitizedData, { merge: true });
+        transaction.set(userRef, sanitizedData, { merge: true });
+    });
 }
 
 /**
@@ -427,24 +676,313 @@ export async function updateUserData(uid, data) {
  * @returns {Promise<UserSettings>}
  */
 export async function updateUserSettings(uid, settings) {
-    const currentUser = await getUserData(uid);
+    const userRef = getUserRef(uid);
+    const sanitizedSettings = sanitizeUserSettings(settings);
 
-    if (!currentUser) {
+    return await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(userRef);
+
+        if (!snap.exists()) {
+            throw new Error("L'usuari no existeix.");
+        }
+
+        const currentUser = /** @type {UserDocument} */ (snap.data());
+        const mergedSettings = {
+            ...getDefaultUserSettings(),
+            ...currentUser.settings,
+            ...sanitizedSettings
+        };
+
+        transaction.set(
+            userRef,
+            { settings: mergedSettings },
+            { merge: true }
+        );
+
+        return mergedSettings;
+    });
+}
+
+/**
+ * Wrapper intern per actualitzar dades personals protegides.
+ *
+ * @param {string} uid
+ * @param {Partial<Pick<UserDocument, "username" | "name" | "surname" | "lastname" | "birthDate" | "email">>} data
+ * @returns {Promise<void>}
+ */
+export async function updatePersonalUserData(uid, data) {
+    const sanitizedData = sanitizePersonalUserUpdateData(data);
+    await updateProtectedUserData(uid, sanitizedData);
+}
+
+/**
+ * Wrapper intern per actualitzar el username.
+ *
+ * @param {string} uid
+ * @param {string} username
+ * @returns {Promise<void>}
+ */
+export async function updateUsername(uid, username) {
+    await updatePersonalUserData(uid, { username });
+}
+
+/**
+ * Wrapper intern per actualitzar el nom.
+ *
+ * @param {string} uid
+ * @param {string} name
+ * @returns {Promise<void>}
+ */
+export async function updateName(uid, name) {
+    await updatePersonalUserData(uid, { name });
+}
+
+/**
+ * Wrapper intern per actualitzar el primer cognom.
+ *
+ * @param {string} uid
+ * @param {string} surname
+ * @returns {Promise<void>}
+ */
+export async function updateSurname(uid, surname) {
+    await updatePersonalUserData(uid, { surname });
+}
+
+/**
+ * Wrapper intern per actualitzar el segon cognom.
+ *
+ * @param {string} uid
+ * @param {string} lastname
+ * @returns {Promise<void>}
+ */
+export async function updateLastname(uid, lastname) {
+    await updatePersonalUserData(uid, { lastname });
+}
+
+/**
+ * Wrapper intern per actualitzar la data de naixement.
+ *
+ * @param {string} uid
+ * @param {Date} birthDate
+ * @returns {Promise<void>}
+ */
+export async function updateBirthDate(uid, birthDate) {
+    await updatePersonalUserData(uid, { birthDate });
+}
+
+/**
+ * Wrapper intern per actualitzar el correu electrònic.
+ *
+ * @param {string} uid
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+export async function updateEmail(uid, email) {
+    await updatePersonalUserData(uid, { email });
+}
+
+/**
+ * Actualitza camps protegits d'un usuari.
+ *
+ * Aquesta funció està pensada per a fluxos interns i controlats.
+ * No s'ha d'exposar a operacions de client no autoritzades.
+ *
+ * @param {string} uid
+ * @param {ProtectedUserUpdateData} data
+ * @returns {Promise<void>}
+ */
+export async function updateProtectedUserData(uid, data) {
+    const userRef = getUserRef(uid);
+    const sanitizedData = sanitizeProtectedUserUpdateData(data);
+
+    await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(userRef);
+
+        if (!snap.exists()) {
+            throw new Error("L'usuari no existeix.");
+        }
+
+        const currentUser = /** @type {UserDocument} */ (snap.data());
+
+        if (
+            sanitizedData.username &&
+            sanitizedData.username !== currentUser.username &&
+            await usernameExists(sanitizedData.username)
+        ) {
+            throw new Error("El nom d'usuari ja està en ús.");
+        }
+
+        if (
+            sanitizedData.email &&
+            sanitizedData.email !== currentUser.email &&
+            await emailExists(sanitizedData.email)
+        ) {
+            throw new Error("El correu electrònic ja està en ús.");
+        }
+
+        transaction.set(userRef, sanitizedData, { merge: true });
+    });
+}
+
+/**
+ * Wrapper intern per persistir l'estat de nivell/experiència.
+ *
+ * @param {string} uid
+ * @param {{ level: number, experience: number, maxExperience: number }} levelState
+ * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
+ */
+export async function updateUserLevelState(uid, levelState) {
+    const sanitizedData = sanitizeLevelStateUpdateData(levelState);
+    await updateProtectedUserData(uid, sanitizedData);
+
+    return /** @type {{ level: number, experience: number, maxExperience: number }} */ ({
+        level: sanitizedData.level,
+        experience: sanitizedData.experience,
+        maxExperience: sanitizedData.maxExperience
+    });
+}
+
+/**
+ * Assigna directament l'estat de nivell/experiència.
+ * Útil per a migracions, correccions o administració controlada.
+ *
+ * @param {string} uid
+ * @param {number} level
+ * @param {number} experience
+ * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
+ */
+export async function setUserLevelState(uid, level, experience) {
+    const nextState = setLevelState(level, experience);
+    return await updateUserLevelState(uid, nextState);
+}
+
+/**
+ * Afegeix experiència a un usuari de manera segura i atòmica.
+ * Gestiona automàticament les pujades de nivell necessàries.
+ *
+ * @param {string} uid
+ * @param {number} gainedExperience
+ * @returns {Promise<{
+ *   level: number,
+ *   experience: number,
+ *   maxExperience: number,
+ *   levelsGained: number
+ * }>}
+ */
+export async function addUserExperience(uid, gainedExperience) {
+    const normalizedGainedExperience = validateExperience(gainedExperience);
+    const currentState = await getUserLevelState(uid);
+
+    if (!currentState) {
         throw new Error("L'usuari no existeix.");
     }
 
-    const sanitizedSettings = sanitizeUserSettings(settings);
-    const mergedSettings = {
-        ...getDefaultUserSettings(),
-        ...currentUser.settings,
-        ...sanitizedSettings
+    const result = addExperienceToLevelState(currentState, normalizedGainedExperience);
+    await updateUserLevelState(uid, result);
+    return result;
+}
+
+/**
+ * Fa pujar l'usuari un nombre concret de nivells.
+ * Reinicia l'experiència actual a 0 per evitar estats inconsistents.
+ *
+ * @param {string} uid
+ * @param {number} levelsToAdd
+ * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
+ */
+export async function levelUpUser(uid, levelsToAdd = 1) {
+    const currentState = await getUserLevelState(uid);
+
+    if (!currentState) {
+        throw new Error("L'usuari no existeix.");
+    }
+
+    const result = levelUpState(currentState, levelsToAdd);
+    await updateUserLevelState(uid, result);
+
+    return {
+        level: result.level,
+        experience: result.experience,
+        maxExperience: result.maxExperience
     };
+}
 
-    await setDoc(
-        getUserRef(uid),
-        { settings: mergedSettings },
-        { merge: true }
-    );
+/**
+ * Fa baixar l'usuari un nombre concret de nivells.
+ * Reinicia l'experiència actual a 0 per mantenir coherència.
+ *
+ * @param {string} uid
+ * @param {number} levelsToRemove
+ * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
+ */
+export async function levelDownUser(uid, levelsToRemove = 1) {
+    const currentState = await getUserLevelState(uid);
 
-    return mergedSettings;
+    if (!currentState) {
+        throw new Error("L'usuari no existeix.");
+    }
+
+    const result = levelDownState(currentState, levelsToRemove);
+    await updateUserLevelState(uid, result);
+
+    return {
+        level: result.level,
+        experience: result.experience,
+        maxExperience: result.maxExperience
+    };
+}
+
+/**
+ * Estableix l'experiència actual dins del nivell de manera controlada.
+ * No permet valors iguals o superiors al màxim del nivell.
+ *
+ * @param {string} uid
+ * @param {number} experience
+ * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
+ */
+export async function setUserExperience(uid, experience) {
+    const currentState = await getUserLevelState(uid);
+
+    if (!currentState) {
+        throw new Error("L'usuari no existeix.");
+    }
+
+    const result = setExperienceInLevelState(currentState, experience);
+    await updateUserLevelState(uid, result);
+
+    return {
+        level: result.level,
+        experience: result.experience,
+        maxExperience: result.maxExperience
+    };
+}
+
+/**
+ * Retorna un resum de progrés de nivell de l'usuari.
+ *
+ * @param {string} uid
+ * @returns {Promise<{
+ *   level: number,
+ *   experience: number,
+ *   maxExperience: number,
+ *   remainingExperience: number,
+ *   progress: number
+ * } | null>}
+ */
+export async function getUserLevelProgress(uid) {
+    const levelState = await getUserLevelState(uid);
+
+    if (!levelState) {
+        return null;
+    }
+
+    const progress = getProgressFromLevelState(levelState);
+
+    return {
+        level: progress.level,
+        experience: progress.experience,
+        maxExperience: progress.maxExperience,
+        remainingExperience: progress.remainingExperience,
+        progress: progress.progress
+    };
 }
