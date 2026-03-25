@@ -1,4 +1,4 @@
-import { selectById, updateById, selectWhere } from "./firestore.js";
+import { selectById, setById, selectWhere } from "./firestore.js";
 import {
   getCachedDailyMissions,
   setCachedDailyMissions,
@@ -6,6 +6,7 @@ import {
 } from "./cache/DailyMissionsCache.js";
 
 const USER_DATA_COLLECTION = "userData";
+const USER_DAILY_MISSIONS_COLLECTION = "userDailyMissions";
 const QUESTS_COLLECTION = "quests";
 const DAILY_MISSIONS_COUNT = 3;
 
@@ -260,8 +261,7 @@ function createDailyMissionFromQuest(quest) {
     endTimestamp: null,
     puntuationWeight: Number.isFinite(quest.puntuationWeight)
       ? quest.puntuationWeight
-      : 1,
-    xpAwarded: false
+      : 1
   };
 }
 
@@ -295,35 +295,79 @@ async function getRandomDailyMissionsFromTable(count = DAILY_MISSIONS_COUNT) {
 }
 
 /**
+ * Valida que el uid sigui correcte.
+ *
+ * @param {string} uid
+ * @returns {string}
+ */
+function validateUid(uid) {
+  if (typeof uid !== "string" || uid.trim() === "") {
+    throw new Error('El camp "uid" és obligatori.');
+  }
+
+  return uid.trim();
+}
+
+/**
+ * Comprova que el doc principal de l'usuari existeixi.
+ *
+ * @param {string} uid
+ * @returns {Promise<void>}
+ */
+async function assertUserExists(uid) {
+  const userData = await selectById(USER_DATA_COLLECTION, uid);
+
+  if (!userData) {
+    throw new Error("L'usuari no existeix.");
+  }
+}
+
+/**
+ * Obté el document de missions diàries d'un usuari.
+ *
+ * @param {string} uid
+ * @returns {Promise<{ dailyMissionsDate: any, missions: Array } | null>}
+ */
+async function getUserDailyMissionsDoc(uid) {
+  return await selectById(USER_DAILY_MISSIONS_COLLECTION, uid);
+}
+
+/**
+ * Guarda completament l'estat de missions diàries d'un usuari.
+ *
+ * @param {string} uid
+ * @param {{dailyMissionsDate: Date|null, missions: Array}} data
+ * @returns {Promise<void>}
+ */
+async function saveUserDailyMissionsDoc(uid, data) {
+  await setById(USER_DAILY_MISSIONS_COLLECTION, uid, data, false);
+}
+
+/**
  * Actualitza les missions diàries si encara no s'han generat avui.
  *
  * @param {string} uid
  * @returns {Promise<Array>}
  */
 export async function updateDailyMissionsIfNeeded(uid) {
-  if (typeof uid !== "string" || uid.trim() === "") {
-    throw new Error('El camp "uid" és obligatori.');
-  }
-
-  const normalizedUid = uid.trim();
+  const normalizedUid = validateUid(uid);
 
   const cachedMissions = getCachedDailyMissions(normalizedUid);
   if (cachedMissions) {
     return cachedMissions;
   }
 
-  const userData = await selectById(USER_DATA_COLLECTION, normalizedUid);
-
-  if (!userData) {
-    throw new Error("L'usuari no existeix.");
-  }
+  await assertUserExists(normalizedUid);
 
   const today = getStartOfToday();
-  const currentDailyMissionsDate = normalizeDate(userData.dailyMissionsDate);
+  const dailyMissionsDoc = await getUserDailyMissionsDoc(normalizedUid);
+  const currentDailyMissionsDate = normalizeDate(
+    dailyMissionsDoc?.dailyMissionsDate
+  );
 
   if (isSameDay(currentDailyMissionsDate, today)) {
-    const missions = Array.isArray(userData.dailyMisions)
-      ? userData.dailyMisions
+    const missions = Array.isArray(dailyMissionsDoc?.missions)
+      ? dailyMissionsDoc.missions
       : [];
 
     setCachedDailyMissions(normalizedUid, missions);
@@ -334,9 +378,9 @@ export async function updateDailyMissionsIfNeeded(uid) {
     DAILY_MISSIONS_COUNT
   );
 
-  await updateById(USER_DATA_COLLECTION, normalizedUid, {
-    dailyMisions: newDailyMissions,
-    dailyMissionsDate: today
+  await saveUserDailyMissionsDoc(normalizedUid, {
+    dailyMissionsDate: today,
+    missions: newDailyMissions
   });
 
   setCachedDailyMissions(normalizedUid, newDailyMissions);
@@ -350,17 +394,9 @@ export async function updateDailyMissionsIfNeeded(uid) {
  * @returns {Promise<Array>}
  */
 export async function forceRefreshDailyMissions(uid) {
-  if (typeof uid !== "string" || uid.trim() === "") {
-    throw new Error('El camp "uid" és obligatori.');
-  }
+  const normalizedUid = validateUid(uid);
 
-  const normalizedUid = uid.trim();
-  const userData = await selectById(USER_DATA_COLLECTION, normalizedUid);
-
-  if (!userData) {
-    throw new Error("L'usuari no existeix.");
-  }
-
+  await assertUserExists(normalizedUid);
   clearCachedDailyMissions(normalizedUid);
 
   const today = getStartOfToday();
@@ -368,9 +404,9 @@ export async function forceRefreshDailyMissions(uid) {
     DAILY_MISSIONS_COUNT
   );
 
-  await updateById(USER_DATA_COLLECTION, normalizedUid, {
-    dailyMisions: newDailyMissions,
-    dailyMissionsDate: today
+  await saveUserDailyMissionsDoc(normalizedUid, {
+    dailyMissionsDate: today,
+    missions: newDailyMissions
   });
 
   setCachedDailyMissions(normalizedUid, newDailyMissions);

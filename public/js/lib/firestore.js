@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   updateDoc,
+  setDoc,
   startAt,
   endAt
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -122,6 +123,14 @@ async function updateById(collectionName, id, data) {
   }
 }
 
+async function setById(collectionName, id, data, merge = false) {
+  try {
+    await setDoc(doc(db, collectionName, id), data, { merge });
+  } catch (error) {
+    throw new Error(`Error al guardar el elemento con ID ${id}: ${error.message}`);
+  }
+}
+
 export {
   getCollection,
   add,
@@ -130,7 +139,8 @@ export {
   selectById,
   selectLike,
   selectWhere,
-  updateById
+  updateById,
+  setById
 };
 
-export {db} from "../config.js";
+export { db } from "../config.js";

@@ -1,7 +1,9 @@
-import { selectById, updateById } from "./firestore.js";
+import { selectById, setById } from "./firestore.js";
 import { addUserExperience } from "./user-data-lib.js";
+import { setCachedDailyMissions } from "./cache/DailyMissionsCache.js";
 
 const USER_DATA_COLLECTION = "userData";
+const USER_DAILY_MISSIONS_COLLECTION = "userDailyMissions";
 
 /**
  * Retorna la data actual amb els segons i mil·lisegons posats a 0,
@@ -78,13 +80,9 @@ function validateProgressAmount(amount) {
 /**
  * Normalitza un valor numèric segons si la missió permet decimals o no.
  *
- * - Si `allowDecimals` és `true`, retorna el valor amb un màxim de 2 decimals.
- * - Si `allowDecimals` és `false`, aplica `Math.floor(...)`.
- *
- * @param {number} value Valor a normalitzar.
- * @param {boolean} allowDecimals Indica si es permeten decimals.
- * @returns {number} Valor normalitzat.
- * @throws {TypeError} Si el valor no és un número finit.
+ * @param {number} value
+ * @param {boolean} allowDecimals
+ * @returns {number}
  */
 function normalizeMissionNumber(value, allowDecimals) {
   if (!Number.isFinite(value)) {
@@ -97,16 +95,9 @@ function normalizeMissionNumber(value, allowDecimals) {
 /**
  * Valida i normalitza la quantitat de progrés segons les regles de la missió.
  *
- * - Primer valida que el valor sigui un número finit superior a 0.
- * - Després:
- *   - si no es permeten decimals, aplica `Math.floor(...)`
- *   - si es permeten decimals, limita a 2 decimals
- * - Si el resultat normalitzat és 0 o inferior, també es rebutja.
- *
- * @param {number} amount Quantitat de progrés introduïda.
- * @param {boolean} allowDecimals Indica si la missió permet decimals.
- * @returns {number} Quantitat de progrés normalitzada.
- * @throws {Error|TypeError} Si el valor no és acceptable.
+ * @param {number} amount
+ * @param {boolean} allowDecimals
+ * @returns {number}
  */
 function normalizeProgressInputByMissionRules(amount, allowDecimals) {
   const validatedAmount = validateProgressAmount(amount);
@@ -124,20 +115,8 @@ function normalizeProgressInputByMissionRules(amount, allowDecimals) {
 /**
  * Valida l'estructura mínima d'una missió d'usuari.
  *
- * Camps obligatoris:
- * - missionId
- * - title
- * - amountTarget
- * - currentProgress
- * - completed
- * - active
- *
- * Camp opcional:
- * - allowDecimals
- *
- * @param {any} mission Missió a validar.
+ * @param {any} mission
  * @returns {void}
- * @throws {Error|TypeError} Si algun camp és invàlid.
  */
 function validateUserMission(mission) {
   if (typeof mission !== "object" || mission === null) {
@@ -190,9 +169,8 @@ function validateUserMission(mission) {
 /**
  * Valida que el conjunt de missions de l'usuari sigui un array vàlid.
  *
- * @param {unknown} missions Llista de missions.
- * @returns {Array<any>} Array validat de missions.
- * @throws {TypeError} Si no és un array vàlid.
+ * @param {unknown} missions
+ * @returns {Array<any>}
  */
 function validateUserMissionsArray(missions) {
   if (!Array.isArray(missions)) {
@@ -206,9 +184,9 @@ function validateUserMissionsArray(missions) {
 /**
  * Cerca l'índex d'una missió dins l'array a partir del seu missionId.
  *
- * @param {Array<any>} missions Array de missions.
- * @param {string} missionId Identificador de la missió.
- * @returns {number} Índex de la missió o -1 si no existeix.
+ * @param {Array<any>} missions
+ * @param {string} missionId
+ * @returns {number}
  */
 function findMissionIndex(missions, missionId) {
   return missions.findIndex((mission) => mission?.missionId === missionId);
@@ -217,8 +195,8 @@ function findMissionIndex(missions, missionId) {
 /**
  * Retorna una còpia superficial d'una missió per evitar mutacions directes.
  *
- * @param {any} mission Missió original.
- * @returns {any} Còpia de la missió.
+ * @param {any} mission
+ * @returns {any}
  */
 function cloneMission(mission) {
   return {
@@ -229,40 +207,87 @@ function cloneMission(mission) {
 /**
  * Retorna si una missió permet decimals.
  *
- * Si el camp `allowDecimals` no existeix, es considera `false`.
- *
- * @param {any} mission Missió de l'usuari.
- * @returns {boolean} `true` si permet decimals; altrament `false`.
+ * @param {any} mission
+ * @returns {boolean}
  */
 function getMissionAllowDecimals(mission) {
   return mission.allowDecimals === true;
 }
 
 /**
- * Obté totes les missions diàries d'un usuari.
+ * Assegura que l'usuari existeix a userData.
  *
- * @param {string} uid Identificador de l'usuari.
- * @returns {Promise<Array<any>>} Llista de missions diàries.
- * @throws {Error|TypeError} Si l'usuari no existeix o les missions són invàlides.
+ * @param {string} uid
+ * @returns {Promise<void>}
  */
-export async function getUserDailyMissions(uid) {
-  const normalizedUid = validateUid(uid);
-  const userData = await selectById(USER_DATA_COLLECTION, normalizedUid);
+async function assertUserExists(uid) {
+  const userData = await selectById(USER_DATA_COLLECTION, uid);
 
   if (!userData) {
     throw new Error("L'usuari no existeix.");
   }
+}
 
-  return validateUserMissionsArray(userData.dailyMisions ?? []);
+/**
+ * Obté el document de missions diàries.
+ *
+ * @param {string} uid
+ * @returns {Promise<{ id?: string, dailyMissionsDate?: any, missions?: Array } | null>}
+ */
+async function getUserDailyMissionsDocument(uid) {
+  return await selectById(USER_DAILY_MISSIONS_COLLECTION, uid);
+}
+
+/**
+ * Desa el document complet de missions diàries.
+ *
+ * @param {string} uid
+ * @param {{ dailyMissionsDate: any, missions: Array }} docData
+ * @returns {Promise<void>}
+ */
+async function saveUserDailyMissionsDocument(uid, docData) {
+  await setById(USER_DAILY_MISSIONS_COLLECTION, uid, docData, false);
+
+  if (Array.isArray(docData?.missions)) {
+    setCachedDailyMissions(uid, docData.missions);
+  }
+}
+
+/**
+ * Carrega i valida el document de missions d'un usuari.
+ *
+ * @param {string} uid
+ * @returns {Promise<{ dailyMissionsDate: any, missions: Array }>}
+ */
+async function getValidatedMissionStore(uid) {
+  await assertUserExists(uid);
+
+  const missionStore = await getUserDailyMissionsDocument(uid);
+
+  return {
+    dailyMissionsDate: missionStore?.dailyMissionsDate ?? null,
+    missions: validateUserMissionsArray(missionStore?.missions ?? [])
+  };
+}
+
+/**
+ * Obté totes les missions diàries d'un usuari.
+ *
+ * @param {string} uid
+ * @returns {Promise<Array<any>>}
+ */
+export async function getUserDailyMissions(uid) {
+  const normalizedUid = validateUid(uid);
+  const missionStore = await getValidatedMissionStore(normalizedUid);
+  return missionStore.missions;
 }
 
 /**
  * Obté una missió concreta d'un usuari pel seu missionId.
  *
- * @param {string} uid Identificador de l'usuari.
- * @param {string} missionId Identificador de la missió.
- * @returns {Promise<any | null>} La missió trobada o `null` si no existeix.
- * @throws {Error|TypeError} Si els paràmetres no són vàlids.
+ * @param {string} uid
+ * @param {string} missionId
+ * @returns {Promise<any | null>}
  */
 export async function getUserMissionById(uid, missionId) {
   const normalizedMissionId = validateMissionId(missionId);
@@ -277,37 +302,23 @@ export async function getUserMissionById(uid, missionId) {
 /**
  * Inicia una missió de l'usuari.
  *
- * Regles:
- * - La missió ha d'existir.
- * - No pot estar completada.
- * - Si ja està activa, no es reinicia l'hora d'inici.
- * - Si s'activa per primer cop, es guarda `startTimestamp` amb hora i minuts.
- * - En iniciar-la, `endTimestamp` es posa a `null`.
- *
- * @param {string} uid Identificador de l'usuari.
- * @param {string} missionId Identificador de la missió.
- * @returns {Promise<any>} Missió actualitzada.
- * @throws {Error|TypeError} Si l'usuari o la missió no són vàlids.
+ * @param {string} uid
+ * @param {string} missionId
+ * @returns {Promise<any>}
  */
 export async function startUserMission(uid, missionId) {
   const normalizedUid = validateUid(uid);
   const normalizedMissionId = validateMissionId(missionId);
 
-  const userData = await selectById(USER_DATA_COLLECTION, normalizedUid);
-
-  if (!userData) {
-    throw new Error("L'usuari no existeix.");
-  }
-
-  const dailyMisions = validateUserMissionsArray(userData.dailyMisions ?? []);
-  const missionIndex = findMissionIndex(dailyMisions, normalizedMissionId);
+  const missionStore = await getValidatedMissionStore(normalizedUid);
+  const missionIndex = findMissionIndex(missionStore.missions, normalizedMissionId);
 
   if (missionIndex === -1) {
     throw new Error("La missió indicada no existeix per a aquest usuari.");
   }
 
-  const updatedDailyMisions = [...dailyMisions];
-  const currentMission = cloneMission(updatedDailyMisions[missionIndex]);
+  const updatedDailyMissions = [...missionStore.missions];
+  const currentMission = cloneMission(updatedDailyMissions[missionIndex]);
 
   if (currentMission.completed) {
     throw new Error(
@@ -324,10 +335,11 @@ export async function startUserMission(uid, missionId) {
     currentMission.startTimestamp ?? getCurrentHourMinuteDate();
   currentMission.endTimestamp = null;
 
-  updatedDailyMisions[missionIndex] = currentMission;
+  updatedDailyMissions[missionIndex] = currentMission;
 
-  await updateById(USER_DATA_COLLECTION, normalizedUid, {
-    dailyMisions: updatedDailyMisions
+  await saveUserDailyMissionsDocument(normalizedUid, {
+    dailyMissionsDate: missionStore.dailyMissionsDate,
+    missions: updatedDailyMissions
   });
 
   return currentMission;
@@ -336,43 +348,24 @@ export async function startUserMission(uid, missionId) {
 /**
  * Afegeix progrés a una missió de l'usuari.
  *
- * Regles:
- * - La missió ha d'existir.
- * - La missió ha d'estar activa.
- * - La missió no pot estar completada.
- * - El progrés introduït ha de ser superior a 0.
- * - Si la missió no permet decimals, el valor introduït es converteix amb `Math.floor(...)`.
- * - Si la missió permet decimals, el valor es limita a un màxim de 2 decimals.
- * - El `currentProgress` final també queda normalitzat segons aquestes mateixes regles.
- * - Si s'arriba o se supera `amountTarget`, la missió es marca com a completada.
- * - En completar-se, es guarda `endTimestamp` amb hora i minuts.
- * - Si no existia `startTimestamp`, també es crea.
- *
- * @param {string} uid Identificador de l'usuari.
- * @param {string} missionId Identificador de la missió.
- * @param {number} amount Quantitat de progrés a afegir.
- * @returns {Promise<any>} Missió actualitzada.
- * @throws {Error|TypeError} Si l'operació no és vàlida.
+ * @param {string} uid
+ * @param {string} missionId
+ * @param {number} amount
+ * @returns {Promise<any>}
  */
 export async function addProgressToUserMission(uid, missionId, amount) {
   const normalizedUid = validateUid(uid);
   const normalizedMissionId = validateMissionId(missionId);
 
-  const userData = await selectById(USER_DATA_COLLECTION, normalizedUid);
-
-  if (!userData) {
-    throw new Error("L'usuari no existeix.");
-  }
-
-  const dailyMisions = validateUserMissionsArray(userData.dailyMisions ?? []);
-  const missionIndex = findMissionIndex(dailyMisions, normalizedMissionId);
+  const missionStore = await getValidatedMissionStore(normalizedUid);
+  const missionIndex = findMissionIndex(missionStore.missions, normalizedMissionId);
 
   if (missionIndex === -1) {
     throw new Error("La missió indicada no existeix per a aquest usuari.");
   }
 
-  const updatedDailyMisions = [...dailyMisions];
-  const currentMission = cloneMission(updatedDailyMisions[missionIndex]);
+  const updatedDailyMissions = [...missionStore.missions];
+  const currentMission = cloneMission(updatedDailyMissions[missionIndex]);
 
   if (!currentMission.active) {
     throw new Error("No es pot progressar una missió que no està activa.");
@@ -426,13 +419,13 @@ export async function addProgressToUserMission(uid, missionId, amount) {
 
     const xp = Math.max(0, Math.floor(normalizedAmountTarget * weight));
     await addUserExperience(normalizedUid, xp);
-
   }
 
-  updatedDailyMisions[missionIndex] = currentMission;
+  updatedDailyMissions[missionIndex] = currentMission;
 
-  await updateById(USER_DATA_COLLECTION, normalizedUid, {
-    dailyMisions: updatedDailyMisions
+  await saveUserDailyMissionsDocument(normalizedUid, {
+    dailyMissionsDate: missionStore.dailyMissionsDate,
+    missions: updatedDailyMissions
   });
 
   return currentMission;
@@ -441,17 +434,10 @@ export async function addProgressToUserMission(uid, missionId, amount) {
 /**
  * Estableix manualment si una missió està activa o no.
  *
- * Regles:
- * - La missió ha d'existir.
- * - Si s'activa per primer cop, es guarda `startTimestamp`.
- * - Si es desactiva, no s'esborra `startTimestamp`.
- * - No es permet activar una missió ja completada.
- *
- * @param {string} uid Identificador de l'usuari.
- * @param {string} missionId Identificador de la missió.
- * @param {boolean} active Nou estat de la missió.
- * @returns {Promise<any>} Missió actualitzada.
- * @throws {Error|TypeError} Si l'operació no és vàlida.
+ * @param {string} uid
+ * @param {string} missionId
+ * @param {boolean} active
+ * @returns {Promise<any>}
  */
 export async function setUserMissionActive(uid, missionId, active) {
   const normalizedUid = validateUid(uid);
@@ -461,21 +447,15 @@ export async function setUserMissionActive(uid, missionId, active) {
     throw new TypeError('El camp "active" no és vàlid.');
   }
 
-  const userData = await selectById(USER_DATA_COLLECTION, normalizedUid);
-
-  if (!userData) {
-    throw new Error("L'usuari no existeix.");
-  }
-
-  const dailyMisions = validateUserMissionsArray(userData.dailyMisions ?? []);
-  const missionIndex = findMissionIndex(dailyMisions, normalizedMissionId);
+  const missionStore = await getValidatedMissionStore(normalizedUid);
+  const missionIndex = findMissionIndex(missionStore.missions, normalizedMissionId);
 
   if (missionIndex === -1) {
     throw new Error("La missió indicada no existeix per a aquest usuari.");
   }
 
-  const updatedDailyMisions = [...dailyMisions];
-  const currentMission = cloneMission(updatedDailyMisions[missionIndex]);
+  const updatedDailyMissions = [...missionStore.missions];
+  const currentMission = cloneMission(updatedDailyMissions[missionIndex]);
 
   if (currentMission.completed && active) {
     throw new Error("No es pot activar una missió completada.");
@@ -487,10 +467,11 @@ export async function setUserMissionActive(uid, missionId, active) {
     currentMission.startTimestamp = getCurrentHourMinuteDate();
   }
 
-  updatedDailyMisions[missionIndex] = currentMission;
+  updatedDailyMissions[missionIndex] = currentMission;
 
-  await updateById(USER_DATA_COLLECTION, normalizedUid, {
-    dailyMisions: updatedDailyMisions
+  await saveUserDailyMissionsDocument(normalizedUid, {
+    dailyMissionsDate: missionStore.dailyMissionsDate,
+    missions: updatedDailyMissions
   });
 
   return currentMission;
@@ -499,37 +480,23 @@ export async function setUserMissionActive(uid, missionId, active) {
 /**
  * Reinicia manualment una missió de l'usuari.
  *
- * Regles:
- * - La missió ha d'existir.
- * - Es deixa sense progrés.
- * - Es marca com a no completada.
- * - Es marca com a no activa.
- * - S'esborren `startTimestamp` i `endTimestamp`.
- *
- * @param {string} uid Identificador de l'usuari.
- * @param {string} missionId Identificador de la missió.
- * @returns {Promise<any>} Missió reiniciada.
- * @throws {Error|TypeError} Si l'usuari o la missió no són vàlids.
+ * @param {string} uid
+ * @param {string} missionId
+ * @returns {Promise<any>}
  */
 export async function resetUserMission(uid, missionId) {
   const normalizedUid = validateUid(uid);
   const normalizedMissionId = validateMissionId(missionId);
 
-  const userData = await selectById(USER_DATA_COLLECTION, normalizedUid);
-
-  if (!userData) {
-    throw new Error("L'usuari no existeix.");
-  }
-
-  const dailyMisions = validateUserMissionsArray(userData.dailyMisions ?? []);
-  const missionIndex = findMissionIndex(dailyMisions, normalizedMissionId);
+  const missionStore = await getValidatedMissionStore(normalizedUid);
+  const missionIndex = findMissionIndex(missionStore.missions, normalizedMissionId);
 
   if (missionIndex === -1) {
     throw new Error("La missió indicada no existeix per a aquest usuari.");
   }
 
-  const updatedDailyMisions = [...dailyMisions];
-  const currentMission = cloneMission(updatedDailyMisions[missionIndex]);
+  const updatedDailyMissions = [...missionStore.missions];
+  const currentMission = cloneMission(updatedDailyMissions[missionIndex]);
 
   currentMission.currentProgress = 0;
   currentMission.completed = false;
@@ -537,10 +504,11 @@ export async function resetUserMission(uid, missionId) {
   currentMission.startTimestamp = null;
   currentMission.endTimestamp = null;
 
-  updatedDailyMisions[missionIndex] = currentMission;
+  updatedDailyMissions[missionIndex] = currentMission;
 
-  await updateById(USER_DATA_COLLECTION, normalizedUid, {
-    dailyMisions: updatedDailyMisions
+  await saveUserDailyMissionsDocument(normalizedUid, {
+    dailyMissionsDate: missionStore.dailyMissionsDate,
+    missions: updatedDailyMissions
   });
 
   return currentMission;

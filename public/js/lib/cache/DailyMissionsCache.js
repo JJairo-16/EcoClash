@@ -1,5 +1,17 @@
 const dailyMissionCache = new Map();
 
+function cloneMission(mission) {
+  if (typeof mission !== "object" || mission === null) {
+    return mission;
+  }
+
+  return { ...mission };
+}
+
+function cloneMissionsArray(missions) {
+  return Array.isArray(missions) ? missions.map(cloneMission) : null;
+}
+
 /**
  * Retorna la clau del dia actual en format YYYY-MM-DD.
  *
@@ -34,7 +46,7 @@ export function getCachedDailyMissions(uid) {
     return null;
   }
 
-  return Array.isArray(cachedEntry.missions) ? cachedEntry.missions : null;
+  return cloneMissionsArray(cachedEntry.missions);
 }
 
 /**
@@ -57,7 +69,7 @@ export function setCachedDailyMissions(uid, missions) {
 
   dailyMissionCache.set(normalizedUid, {
     dateKey: getTodayCacheKey(),
-    missions
+    missions: cloneMissionsArray(missions)
   });
 }
 

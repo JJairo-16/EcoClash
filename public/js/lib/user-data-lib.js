@@ -20,8 +20,6 @@ import {
     validateMaxExperience,
     validateExperience,
     validateFriends,
-    validateDailyMissionsDate,
-    validateDailyMisions,
     validateRequiredText,
     validateUserExtraData
 } from "./user-validators.js";
@@ -68,8 +66,6 @@ import { updateDailyMissionsIfNeeded } from "./random-quest-selector.js";
  * @property {number} experience
  * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friends
  * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friendsRequest
- * @property {Date|null} dailyMissionsDate
- * @property {Array<Object>} dailyMisions
  */
 
 const USER_DATA_COLLECTION = "userData";
@@ -105,9 +101,7 @@ const LEVEL_STATE_FIELDS = new Set([
 const PUBLIC_UPDATE_FIELDS = new Set([
     "phoneNum",
     "friends",
-    "friendsRequest",
-    "dailyMissionsDate",
-    "dailyMisions"
+    "friendsRequest"
 ]);
 
 function getDefaultUserSettings() {
@@ -178,9 +172,7 @@ async function buildNewUserData(user, extraData) {
         maxExperience: validateMaxExperience(getDefaultMaxExperience()),
         experience: 0,
         friends: [],
-        friendsRequest: [],
-        dailyMissionsDate: null,
-        dailyMisions: []
+        friendsRequest: []
     };
 }
 
@@ -253,12 +245,6 @@ function sanitizePublicUserUpdateData(data) {
                 break;
             case "friendsRequest":
                 sanitizedData.friendsRequest = validateFriends(value);
-                break;
-            case "dailyMissionsDate":
-                sanitizedData.dailyMissionsDate = value == null ? null : validateDailyMissionsDate(value);
-                break;
-            case "dailyMisions":
-                sanitizedData.dailyMisions = validateDailyMisions(value);
                 break;
             default:
                 throw new Error(`El camp "${key}" no es pot actualitzar.`);
