@@ -1,4 +1,5 @@
 import { selectById, updateById } from "./firestore.js";
+import { addUserExperience } from "./user-data-lib.js";
 
 const USER_DATA_COLLECTION = "userData";
 
@@ -417,6 +418,15 @@ export async function addProgressToUserMission(uid, missionId, amount) {
 
   if (completed) {
     currentMission.endTimestamp = getCurrentHourMinuteDate();
+
+    const weight =
+      Number.isFinite(currentMission.puntuationWeight)
+        ? currentMission.puntuationWeight
+        : 1;
+
+    const xp = Math.max(0, Math.floor(normalizedAmountTarget * weight));
+    await addUserExperience(normalizedUid, xp);
+
   }
 
   updatedDailyMisions[missionIndex] = currentMission;

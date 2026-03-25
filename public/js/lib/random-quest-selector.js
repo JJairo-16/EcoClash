@@ -1,4 +1,9 @@
-import { selectById, selectAll, updateById } from "./firestore.js";
+import { selectById, updateById, selectWhere } from "./firestore.js";
+import {
+  getCachedDailyMissions,
+  setCachedDailyMissions,
+  clearCachedDailyMissions
+} from "./cache/DailyMissionsCache.js";
 
 const USER_DATA_COLLECTION = "userData";
 const QUESTS_COLLECTION = "quests";
@@ -47,25 +52,43 @@ function getQuestTarget(min, max, allowDecimals) {
   const t = triangularRandom();
   const target = lerp(min, max, t);
 
-  if (allowDecimals) return round2(target);
-  else return Math.round(target);
+  return allowDecimals ? round2(target) : Math.round(target);
 }
 
 /**
- * Barreja un array (Fisher-Yates).
+ * Retorna una mostra aleatòria de k elements sense repetir.
  *
- * @param {Array} array
- * @returns {Array}
+ * @param {Array<any>} array
+ * @param {number} k
+ * @returns {Array<any>}
  */
-function shuffle(array) {
-  const copy = [...array];
-
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
+function getRandomSampleNoCopy(array, k) {
+  if (!Array.isArray(array)) {
+    throw new TypeError("El paràmetre array no és vàlid.");
   }
 
-  return copy;
+  if (!Number.isInteger(k) || k < 0) {
+    throw new TypeError('El paràmetre "k" no és vàlid.');
+  }
+
+  const n = array.length;
+  const limit = Math.min(k, n);
+
+  if (limit === 0) return [];
+
+  const taken = new Set();
+  const result = [];
+
+  while (result.length < limit) {
+    const index = Math.floor(Math.random() * n);
+
+    if (!taken.has(index)) {
+      taken.add(index);
+      result.push(array[index]);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -168,10 +191,7 @@ function getQuestTitle(quest) {
  * @returns {boolean}
  */
 function getAllowDecimals(quest) {
-  if (typeof quest.allowDecimals === "boolean") {
-    return quest.allowDecimals;
-  }
-  return false;
+  return quest.allowDecimals === true;
 }
 
 /**
@@ -235,8 +255,13 @@ function createDailyMissionFromQuest(quest) {
     currentProgress: 0,
     completed: false,
     active: false,
+    allowDecimals,
     startTimestamp: null,
-    endTimestamp: null
+    endTimestamp: null,
+    puntuationWeight: Number.isFinite(quest.puntuationWeight)
+      ? quest.puntuationWeight
+      : 1,
+    xpAwarded: false
   };
 }
 
@@ -247,21 +272,26 @@ function createDailyMissionFromQuest(quest) {
  * @returns {Promise<Array>}
  */
 async function getRandomDailyMissionsFromTable(count = DAILY_MISSIONS_COUNT) {
-  const allQuests = await selectAll(QUESTS_COLLECTION);
-
-  if (!Array.isArray(allQuests)) {
-    throw new TypeError("La taula de missions no té un format vàlid.");
+  if (!Number.isInteger(count) || count <= 0) {
+    throw new TypeError('El paràmetre "count" no és vàlid.');
   }
 
-  const activeQuests = allQuests.filter((quest) => quest?.active === true);
+  const activeQuests = await selectWhere(
+    QUESTS_COLLECTION,
+    "active",
+    "==",
+    true
+  );
+
+  if (!Array.isArray(activeQuests)) {
+    throw new TypeError("La consulta de missions actives no és vàlida.");
+  }
 
   if (activeQuests.length === 0) {
     throw new Error("No hi ha missions actives disponibles.");
   }
 
-  return shuffle(activeQuests)
-    .slice(0, Math.min(count, activeQuests.length))
-    .map(createDailyMissionFromQuest);
+  return getRandomSampleNoCopy(activeQuests, count).map(createDailyMissionFromQuest);
 }
 
 /**
@@ -276,6 +306,12 @@ export async function updateDailyMissionsIfNeeded(uid) {
   }
 
   const normalizedUid = uid.trim();
+
+  const cachedMissions = getCachedDailyMissions(normalizedUid);
+  if (cachedMissions) {
+    return cachedMissions;
+  }
+
   const userData = await selectById(USER_DATA_COLLECTION, normalizedUid);
 
   if (!userData) {
@@ -285,19 +321,25 @@ export async function updateDailyMissionsIfNeeded(uid) {
   const today = getStartOfToday();
   const currentDailyMissionsDate = normalizeDate(userData.dailyMissionsDate);
 
-  // Si ja s'han generat avui, es retornen
   if (isSameDay(currentDailyMissionsDate, today)) {
-    return Array.isArray(userData.dailyMisions) ? userData.dailyMisions : [];
+    const missions = Array.isArray(userData.dailyMisions)
+      ? userData.dailyMisions
+      : [];
+
+    setCachedDailyMissions(normalizedUid, missions);
+    return missions;
   }
 
-  // Generació de noves missions
-  const newDailyMissions = await getRandomDailyMissionsFromTable(DAILY_MISSIONS_COUNT);
+  const newDailyMissions = await getRandomDailyMissionsFromTable(
+    DAILY_MISSIONS_COUNT
+  );
 
   await updateById(USER_DATA_COLLECTION, normalizedUid, {
     dailyMisions: newDailyMissions,
     dailyMissionsDate: today
   });
 
+  setCachedDailyMissions(normalizedUid, newDailyMissions);
   return newDailyMissions;
 }
 
@@ -319,13 +361,18 @@ export async function forceRefreshDailyMissions(uid) {
     throw new Error("L'usuari no existeix.");
   }
 
+  clearCachedDailyMissions(normalizedUid);
+
   const today = getStartOfToday();
-  const newDailyMissions = await getRandomDailyMissionsFromTable(DAILY_MISSIONS_COUNT);
+  const newDailyMissions = await getRandomDailyMissionsFromTable(
+    DAILY_MISSIONS_COUNT
+  );
 
   await updateById(USER_DATA_COLLECTION, normalizedUid, {
     dailyMisions: newDailyMissions,
     dailyMissionsDate: today
   });
 
+  setCachedDailyMissions(normalizedUid, newDailyMissions);
   return newDailyMissions;
 }
