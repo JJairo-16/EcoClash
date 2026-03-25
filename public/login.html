@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoClash - Inici de sessió</title>
+  <meta name="description" content="Accés i registre a EcoClash">
+  <meta name="theme-color" content="#1A2F25">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="navbar-container">
+        <a href="login.html" class="navbar-logo" aria-label="EcoClash">
+          <img src="img/EcoClash.webp" alt="EcoClash Logo" class="navbar-logo-img">
+        </a>
+
+        <ul class="navbar-menu">
+          <li class="navbar-item"><a href="login.html" class="navbar-link active">Inici de sessió</a></li>
+          <li class="navbar-item"><a href="#" class="navbar-link">Ajuda</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main-content">
+    <section class="dashboard" style="max-width: 1100px; margin: 0 auto;">
+      <div class="welcome-card card" style="margin-bottom: 24px;">
+        <h1>ACCÉS A ECOCLASH</h1>
+        <p>Inicia sessió amb un usuari registrat o crea un compte nou. Fins que l'inici de sessió no siga correcte, no es redirigirà a <strong>dashboard.html</strong>.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+        <section class="dashboard-section">
+          <div class="card" style="height: 100%;">
+            <div class="section-header" style="margin-bottom: 20px;">
+              <div>
+                <h2 class="section-title">Inici de sessió</h2>
+                <p class="challenge-description">Només hi poden accedir comptes registrats.</p>
+              </div>
+            </div>
+
+            <form id="login-form" novalidate>
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" for="login-identifier">Usuari o correu</label>
+                <input id="login-identifier" class="form-input" type="text" placeholder="Ex: ecoalex o alex@ecoclash.com" autocomplete="username">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label" for="login-password">Contrasenya</label>
+                <input id="login-password" class="form-input" type="password" placeholder="Introdueix la contrasenya" autocomplete="current-password">
+              </div>
+
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
+                <button class="btn btn-primary" type="submit">Iniciar sessió</button>
+                <button class="btn btn-secondary" type="button" id="fill-demo-login">Prova</button>
+              </div>
+
+              <div id="login-message" style="margin-top: 16px;"></div>
+            </form>
+          </div>
+        </section>
+
+        <section class="dashboard-section">
+          <div class="card" style="height: 100%;">
+            <div class="section-header" style="margin-bottom: 20px;">
+              <div>
+                <h2 class="section-title">Registrar-se</h2>
+                <p class="challenge-description">Crea un usuari nou i podràs iniciar sessió de seguida.</p>
+              </div>
+            </div>
+
+            <form id="register-form" novalidate>
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" for="register-name">Nom</label>
+                <input id="register-name" class="form-input" type="text" placeholder="Ex: Alex">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" for="register-username">Nom d'usuari</label>
+                <input id="register-username" class="form-input" type="text" placeholder="Ex: ecoalex">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" for="register-email">Correu electrònic</label>
+                <input id="register-email" class="form-input" type="email" placeholder="Ex: alex@ecoclash.com" autocomplete="email">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" for="register-password">Contrasenya</label>
+                <input id="register-password" class="form-input" type="password" placeholder="Mínim 6 caràcters" autocomplete="new-password">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label" for="register-password-repeat">Repetir contrasenya</label>
+                <input id="register-password-repeat" class="form-input" type="password" placeholder="Repeteix la contrasenya" autocomplete="new-password">
+              </div>
+
+              <button class="btn btn-primary" type="submit">Registrar-me</button>
+
+              <div id="register-message" style="margin-top: 16px;"></div>
+            </form>
+          </div>
+        </section>
+      </div>
+
+      <section class="dashboard-section" style="margin-top: 24px;">
+        <div class="card">
+          <div class="section-header" style="margin-bottom: 16px;">
+            <div>
+              <h2 class="section-title">Com funciona ara</h2>
+              <p class="challenge-description">De moment es guarda al navegador per simular el futur sistema amb base de dades.</p>
+            </div>
+          </div>
+
+          <div class="challenge-info">
+            <span>Accés bloquejat sense iniciar sessió</span>
+            <span>Sí</span>
+          </div>
+          <div class="challenge-info">
+            <span>Registre disponible</span>
+            <span>Sí</span>
+          </div>
+          <div class="challenge-info">
+            <span>Persistència temporal</span>
+            <span>localStorage</span>
+          </div>
+          <div class="challenge-info">
+            <span>Redirecció després d'un inici de sessió correcte</span>
+            <span>dashboard.html</span>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2026 Clash Labs - Contacte: contact@clashlabs.cat</p>
+    </div>
+  </footer>
+
+  <script>
+    const STORAGE_KEY_USERS = 'ecoclash_registered_users';
+    const STORAGE_KEY_SESSION = 'ecoclash_session';
+
+    function getUsers() {
+      const raw = localStorage.getItem(STORAGE_KEY_USERS);
+      if (!raw) {
+        const defaultUsers = [
+          {
+            id: 'USR-001',
+            name: 'Alex',
+            username: 'alex.ecoclash',
+            email: 'alex@ecoclash.app',
+            password: '123456'
+          }
+        ];
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(defaultUsers));
+        return defaultUsers;
+      }
+
+      try {
+        return JSON.parse(raw) || [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+    }
+
+    function setSession(user) {
+      localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        loggedIn: true
+      }));
+    }
+
+    function showMessage(elementId, text, isSuccess) {
+      const el = document.getElementById(elementId);
+      el.innerHTML = `
+        <div class="card" style="padding: 12px; border: 1px solid ${isSuccess ? 'rgba(34,197,94,0.45)' : 'rgba(239,68,68,0.45)'};">
+          <p style="margin: 0;">${text}</p>
+        </div>
+      `;
+    }
+
+    function clearMessage(elementId) {
+      document.getElementById(elementId).innerHTML = '';
+    }
+
+    function normalizeValue(value) {
+      return value.trim().toLowerCase();
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function redirectToDashboard() {
+      window.location.href = 'dashboard.html';
+    }
+
+    document.getElementById('fill-demo-login').addEventListener('click', function () {
+      document.getElementById('login-identifier').value = 'alex.ecoclash';
+      document.getElementById('login-password').value = '123456';
+      clearMessage('login-message');
+    });
+
+    document.getElementById('register-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      clearMessage('register-message');
+
+      const name = document.getElementById('register-name').value.trim();
+      const username = document.getElementById('register-username').value.trim();
+      const email = document.getElementById('register-email').value.trim();
+      const password = document.getElementById('register-password').value;
+      const repeatPassword = document.getElementById('register-password-repeat').value;
+
+      if (!name || !username || !email || !password || !repeatPassword) {
+        showMessage('register-message', 'Ompli tots els camps del registre.', false);
+        return;
+      }
+
+      if (username.length < 3) {
+        showMessage('register-message', 'El nom d\'usuari ha de tindre almenys 3 caràcters.', false);
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        showMessage('register-message', 'Introdueix un correu electrònic vàlid.', false);
+        return;
+      }
+
+      if (password.length < 6) {
+        showMessage('register-message', 'La contrasenya ha de tindre almenys 6 caràcters.', false);
+        return;
+      }
+
+      if (password !== repeatPassword) {
+        showMessage('register-message', 'Les contrasenyes no coincideixen.', false);
+        return;
+      }
+
+      const users = getUsers();
+
+      const usernameExists = users.some(function (user) {
+        return normalizeValue(user.username) === normalizeValue(username);
+      });
+
+      if (usernameExists) {
+        showMessage('register-message', 'Aquest nom d\'usuari ja existeix.', false);
+        return;
+      }
+
+      const emailExists = users.some(function (user) {
+        return normalizeValue(user.email) === normalizeValue(email);
+      });
+
+      if (emailExists) {
+        showMessage('register-message', 'Aquest correu ja està registrat.', false);
+        return;
+      }
+
+      const newUser = {
+        id: 'USR-' + Date.now(),
+        name: name,
+        username: username,
+        email: email,
+        password: password
+      };
+
+      users.push(newUser);
+      saveUsers(users);
+
+      showMessage('register-message', 'Usuari registrat correctament. Ja pots iniciar sessió amb aquest compte.', true);
+
+      document.getElementById('login-identifier').value = username;
+      document.getElementById('login-password').value = password;
+
+      document.getElementById('register-form').reset();
+    });
+
+    document.getElementById('login-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      clearMessage('login-message');
+
+      const identifier = document.getElementById('login-identifier').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!identifier || !password) {
+        showMessage('login-message', 'Introdueix usuari o correu i la contrasenya.', false);
+        return;
+      }
+
+      const users = getUsers();
+
+      const userFound = users.find(function (user) {
+        return (
+          normalizeValue(user.username) === normalizeValue(identifier) ||
+          normalizeValue(user.email) === normalizeValue(identifier)
+        ) && user.password === password;
+      });
+
+      if (!userFound) {
+        showMessage('login-message', 'Credencials incorrectes o compte inexistent.', false);
+        return;
+      }
+
+      setSession(userFound);
+      showMessage('login-message', 'Inici de sessió correcte. Redirigint al dashboard...', true);
+
+      setTimeout(function () {
+        redirectToDashboard();
+      }, 700);
+    });
+
+    (function init() {
+      getUsers();
+    })();
+  </script>
+</body>
+</html>
