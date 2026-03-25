@@ -6,7 +6,6 @@ import {
     getDocs,
     query,
     runTransaction,
-    setDoc,
     where
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import {
@@ -35,73 +34,47 @@ import {
     setExperienceInLevelState,
     setLevelState
 } from "./level-manager.js";
+import { updateDailyMissionsIfNeeded } from "./random-quest-selector.js";
 
 /**
  * @typedef {Object} UserExtraData
- * @property {string} username Nom d'usuari únic que es mostrarà a l'app.
- * @property {string} name Nom real de l'usuari.
- * @property {string} surname Primer cognom de l'usuari.
- * @property {string} [lastname] Segon cognom de l'usuari.
- * @property {string} [phoneNum] Número de telèfon de l'usuari.
- * @property {Date} birthDate Data de naixement de l'usuari.
+ * @property {string} username
+ * @property {string} name
+ * @property {string} surname
+ * @property {string} [lastname]
+ * @property {string} [phoneNum]
+ * @property {Date} birthDate
  */
 
 /**
  * @typedef {Object} UserSettings
- * @property {boolean} notifications Si l'usuari vol rebre notificacions.
- * @property {number} profilePrivacy Com vol l'usuari que sigui el seu perfil.
- * @property {boolean} bigLetters Si l'usuari vol que les lletres de l'app siguin grans.
- * @property {boolean|null} darkTheme Si l'usuari vol tema fosc, clar o imitar el sistema.
+ * @property {boolean} notifications
+ * @property {number} profilePrivacy
+ * @property {boolean} bigLetters
+ * @property {boolean|null} darkTheme
  */
 
 /**
  * @typedef {Object} UserDocument
- * @property {string} username Nom d'usuari únic.
- * @property {string} name Nom real.
- * @property {string} surname Primer cognom.
- * @property {string} lastname Segon cognom.
- * @property {string} phoneNum Número de telèfon.
- * @property {Date} birthDate Data de naixement.
- * @property {string} email Correu electrònic únic.
- * @property {number} level Nivell actual de l'usuari.
- * @property {number} maxExperience Experiència màxima del nivell actual.
- * @property {number} experience Experiència actual dins del nivell.
- * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friends Array de referències a usuaris amics.
- * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friendsRequest Array de referències a solicituds d'usuaris d'amistat.
- * @property {Date} dailyMissionsDate Data de la missió diària.
- * @property {Array<Object>} dailyMisions Array de missions diàries.
- * @property {UserSettings} settings Configuració de l'usuari.
+ * @property {string} username
+ * @property {string} name
+ * @property {string} surname
+ * @property {string} lastname
+ * @property {string} phoneNum
+ * @property {Date} birthDate
+ * @property {string} email
+ * @property {number} level
+ * @property {number} maxExperience
+ * @property {number} experience
+ * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friends
+ * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friendsRequest
+ * @property {Date|null} dailyMissionsDate
+ * @property {Array<Object>} dailyMisions
  */
 
-/**
- * @typedef {Object} PublicUserUpdateData
- * @property {string} [phoneNum] Número de telèfon.
- * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} [friends] Array de referències a usuaris amics.
- * @property {Array<import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference>} friendsRequest Array de referències a solicituds d'usuaris d'amistat. 
- * @property {Date} [dailyMissionsDate] Data de la missió diària.
- * @property {Array<Object>} [dailyMisions] Array de missions diàries.
- * @property {UserSettings} [settings] Configuració de l'usuari.
- */
+const USER_DATA_COLLECTION = "userData";
+const USER_SETTINGS_COLLECTION = "userSettings";
 
-/**
- * @typedef {Object} ProtectedUserUpdateData
- * @property {string} [username] Nom d'usuari únic.
- * @property {string} [name] Nom real.
- * @property {string} [surname] Primer cognom.
- * @property {string} [lastname] Segon cognom.
- * @property {Date} [birthDate] Data de naixement.
- * @property {string} [email] Correu electrònic.
- * @property {number} [level] Nivell actual.
- * @property {number} [maxExperience] Experiència màxima del nivell actual.
- * @property {number} [experience] Experiència actual dins del nivell.
- */
-
-const USERS_COLLECTION = "users";
-
-/**
- * Camps protegits que no s'han de poder modificar des d'actualitzacions públiques.
- * Inclou tota la informació personal excepte el telèfon, i també el sistema de nivell/XP.
- */
 const PROTECTED_USER_FIELDS = new Set([
     "username",
     "name",
@@ -114,9 +87,6 @@ const PROTECTED_USER_FIELDS = new Set([
     "experience"
 ]);
 
-/**
- * Camps estrictament personals de l'usuari.
- */
 const PERSONAL_USER_FIELDS = new Set([
     "username",
     "name",
@@ -126,38 +96,20 @@ const PERSONAL_USER_FIELDS = new Set([
     "email"
 ]);
 
-/**
- * Camps relacionats amb nivell/experiència.
- */
 const LEVEL_STATE_FIELDS = new Set([
     "level",
     "maxExperience",
     "experience"
 ]);
 
-/**
- * Camps públics permesos en actualitzacions normals.
- */
 const PUBLIC_UPDATE_FIELDS = new Set([
     "phoneNum",
     "friends",
     "friendsRequest",
     "dailyMissionsDate",
-    "dailyMisions",
-    "settings"
+    "dailyMisions"
 ]);
 
-/**
- * Retorna la configuració per defecte de l'usuari.
- *
- * Valors inicials:
- * - notifications: true
- * - profilePrivacy: 2
- * - bigLetters: false
- * - darkTheme: segons preferència del sistema quan està disponible
- *
- * @returns {UserSettings}
- */
 function getDefaultUserSettings() {
     const supportsMatchMedia =
         typeof globalThis !== "undefined" &&
@@ -173,23 +125,14 @@ function getDefaultUserSettings() {
     };
 }
 
-/**
- * Retorna la referència del document de l'usuari.
- *
- * @param {string} uid
- * @returns {import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").DocumentReference}
- */
-function getUserRef(uid) {
-    const normalizedUid = validateRequiredText(uid, "uid");
-    return doc(db, USERS_COLLECTION, normalizedUid);
+function getUserDataRef(uid) {
+    return doc(db, USER_DATA_COLLECTION, validateRequiredText(uid, "uid"));
 }
 
-/**
- * Comprova que l'usuari autenticat sigui vàlid.
- *
- * @param {import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").User | null} user
- * @returns {string}
- */
+function getUserSettingsRef(uid) {
+    return doc(db, USER_SETTINGS_COLLECTION, validateRequiredText(uid, "uid"));
+}
+
 function validateAuthUser(user) {
     if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
         throw new Error("L'usuari autenticat no és vàlid.");
@@ -198,13 +141,6 @@ function validateAuthUser(user) {
     return user.uid.trim();
 }
 
-/**
- * Comprova que només hi hagi camps permesos.
- *
- * @param {Record<string, unknown>} data
- * @param {Set<string>} allowedFields
- * @param {string} errorPrefix
- */
 function assertOnlyAllowedFields(data, allowedFields, errorPrefix) {
     for (const key of Object.keys(data)) {
         if (!allowedFields.has(key)) {
@@ -213,11 +149,6 @@ function assertOnlyAllowedFields(data, allowedFields, errorPrefix) {
     }
 }
 
-/**
- * Comprova que cap camp protegit s'hagi inclòs en dades públiques.
- *
- * @param {Record<string, unknown>} data
- */
 function assertNoProtectedFields(data) {
     for (const key of Object.keys(data)) {
         if (PROTECTED_USER_FIELDS.has(key)) {
@@ -226,13 +157,6 @@ function assertNoProtectedFields(data) {
     }
 }
 
-/**
- * Construeix i valida les dades inicials d'un nou usuari.
- *
- * @param {import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").User | null} user
- * @param {UserExtraData} extraData
- * @returns {Promise<UserDocument>}
- */
 async function buildNewUserData(user, extraData) {
     validateAuthUser(user);
 
@@ -255,18 +179,11 @@ async function buildNewUserData(user, extraData) {
         experience: 0,
         friends: [],
         friendsRequest: [],
-        dailyMissionsDate: new Date(),
-        dailyMisions: [],
-        settings: getDefaultUserSettings()
+        dailyMissionsDate: null,
+        dailyMisions: []
     };
 }
 
-/**
- * Valida i normalitza dades parcials de configuració.
- *
- * @param {unknown} value
- * @returns {Partial<UserSettings>}
- */
 function sanitizeUserSettings(value) {
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
         throw new Error("La configuració de l'usuari no és vàlida.");
@@ -289,31 +206,24 @@ function sanitizeUserSettings(value) {
                 }
                 sanitizedSettings.notifications = fieldValue;
                 break;
-
             case "profilePrivacy":
-                if (
-                    typeof fieldValue !== "number" ||
-                    !Number.isInteger(fieldValue)
-                ) {
+                if (typeof fieldValue !== "number" || !Number.isInteger(fieldValue)) {
                     throw new TypeError('El camp "profilePrivacy" no és vàlid.');
                 }
                 sanitizedSettings.profilePrivacy = fieldValue;
                 break;
-
             case "bigLetters":
                 if (typeof fieldValue !== "boolean") {
                     throw new TypeError('El camp "bigLetters" no és vàlid.');
                 }
                 sanitizedSettings.bigLetters = fieldValue;
                 break;
-
             case "darkTheme":
                 if (fieldValue !== null && typeof fieldValue !== "boolean") {
                     throw new TypeError('El camp "darkTheme" no és vàlid.');
                 }
                 sanitizedSettings.darkTheme = fieldValue;
                 break;
-
             default:
                 throw new Error(`El camp de configuració "${key}" no existeix.`);
         }
@@ -322,13 +232,6 @@ function sanitizeUserSettings(value) {
     return sanitizedSettings;
 }
 
-/**
- * Valida i normalitza dades públiques actualitzables.
- * No permet modificar cap camp protegit.
- *
- * @param {PublicUserUpdateData} data
- * @returns {Partial<UserDocument>}
- */
 function sanitizePublicUserUpdateData(data) {
     if (typeof data !== "object" || data === null || Array.isArray(data)) {
         throw new Error("Les dades de l'usuari no són vàlides.");
@@ -345,20 +248,17 @@ function sanitizePublicUserUpdateData(data) {
             case "phoneNum":
                 sanitizedData.phoneNum = validatePhoneNum(value);
                 break;
-            case "friends" | "friendsRequest":
+            case "friends":
                 sanitizedData.friends = validateFriends(value);
                 break;
+            case "friendsRequest":
+                sanitizedData.friendsRequest = validateFriends(value);
+                break;
             case "dailyMissionsDate":
-                sanitizedData.dailyMissionsDate = validateDailyMissionsDate(value);
+                sanitizedData.dailyMissionsDate = value == null ? null : validateDailyMissionsDate(value);
                 break;
             case "dailyMisions":
                 sanitizedData.dailyMisions = validateDailyMisions(value);
-                break;
-            case "settings":
-                sanitizedData.settings = {
-                    ...getDefaultUserSettings(),
-                    ...sanitizeUserSettings(value)
-                };
                 break;
             default:
                 throw new Error(`El camp "${key}" no es pot actualitzar.`);
@@ -368,13 +268,6 @@ function sanitizePublicUserUpdateData(data) {
     return sanitizedData;
 }
 
-/**
- * Valida i normalitza dades protegides.
- * Aquesta funció només s'ha d'utilitzar des de wrappers interns/controlats.
- *
- * @param {ProtectedUserUpdateData} data
- * @returns {Partial<UserDocument>}
- */
 function sanitizeProtectedUserUpdateData(data) {
     if (typeof data !== "object" || data === null || Array.isArray(data)) {
         throw new Error("Les dades protegides de l'usuari no són vàlides.");
@@ -422,59 +315,67 @@ function sanitizeProtectedUserUpdateData(data) {
     return sanitizedData;
 }
 
-/**
- * Valida i normalitza només les dades personals protegides.
- *
- * @param {Partial<Pick<UserDocument, "username" | "name" | "surname" | "lastname" | "birthDate" | "email">>} data
- * @returns {Partial<UserDocument>}
- */
 function sanitizePersonalUserUpdateData(data) {
     if (typeof data !== "object" || data === null || Array.isArray(data)) {
         throw new Error("Les dades personals de l'usuari no són vàlides.");
     }
 
     assertOnlyAllowedFields(data, PERSONAL_USER_FIELDS, "Actualització personal no permesa");
-
     return sanitizeProtectedUserUpdateData(data);
 }
 
-/**
- * Valida i normalitza només l'estat de nivell/experiència.
- *
- * @param {Partial<Pick<UserDocument, "level" | "maxExperience" | "experience">>} data
- * @returns {Partial<UserDocument>}
- */
 function sanitizeLevelStateUpdateData(data) {
     if (typeof data !== "object" || data === null || Array.isArray(data)) {
         throw new Error("L'estat de nivell no és vàlid.");
     }
 
     assertOnlyAllowedFields(data, LEVEL_STATE_FIELDS, "Actualització de nivell no permesa");
-
     return sanitizeProtectedUserUpdateData(data);
+}
+
+async function userDataDocExists(uid) {
+    const snap = await getDoc(getUserDataRef(uid));
+    return snap.exists();
+}
+
+async function userSettingsDocExists(uid) {
+    const snap = await getDoc(getUserSettingsRef(uid));
+    return snap.exists();
 }
 
 /**
  * Comprova si existeix un usuari a Firestore.
+ * Necessita tant `userData/{uid}` com `userSettings/{uid}`.
  *
  * @param {import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").User | null} user
  * @returns {Promise<boolean>}
  */
 export async function userExists(user) {
     const uid = validateAuthUser(user);
-    const snap = await getDoc(getUserRef(uid));
-    return snap.exists();
+    const [hasUserData, hasUserSettings] = await Promise.all([
+        userDataDocExists(uid),
+        userSettingsDocExists(uid)
+    ]);
+
+    return hasUserData && hasUserSettings;
 }
 
 /**
  * Comprova si existeix un usuari pel seu uid.
+ * Necessita tant `userData/{uid}` com `userSettings/{uid}`.
  *
  * @param {string} uid
  * @returns {Promise<boolean>}
  */
 export async function userUidExists(uid) {
-    const snap = await getDoc(getUserRef(uid));
-    return snap.exists();
+    const normalizedUid = validateRequiredText(uid, "uid");
+
+    const [hasUserData, hasUserSettings] = await Promise.all([
+        userDataDocExists(normalizedUid),
+        userSettingsDocExists(normalizedUid)
+    ]);
+
+    return hasUserData && hasUserSettings;
 }
 
 /**
@@ -485,7 +386,7 @@ export async function userUidExists(uid) {
  */
 export async function usernameExists(username) {
     const normalizedUsername = validateUsername(username);
-    const usersRef = collection(db, USERS_COLLECTION);
+    const usersRef = collection(db, USER_DATA_COLLECTION);
     const q = query(usersRef, where("username", "==", normalizedUsername));
     const snapshot = await getDocs(q);
 
@@ -500,7 +401,7 @@ export async function usernameExists(username) {
  */
 export async function emailExists(email) {
     const normalizedEmail = validateEmail(email);
-    const usersRef = collection(db, USERS_COLLECTION);
+    const usersRef = collection(db, USER_DATA_COLLECTION);
     const q = query(usersRef, where("email", "==", normalizedEmail));
     const snapshot = await getDocs(q);
 
@@ -514,7 +415,8 @@ export async function emailExists(email) {
  * @returns {Promise<UserDocument | null>}
  */
 export async function getUserData(uid) {
-    const snap = await getDoc(getUserRef(uid));
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const snap = await getDoc(getUserDataRef(normalizedUid));
 
     if (!snap.exists()) {
         return null;
@@ -524,36 +426,10 @@ export async function getUserData(uid) {
 }
 
 /**
- * Obté només la informació protegida de l'usuari.
+ * Obté només les dades personals protegides.
  *
  * @param {string} uid
- * @returns {Promise<ProtectedUserUpdateData | null>}
- */
-export async function getProtectedUserData(uid) {
-    const userData = await getUserData(uid);
-
-    if (!userData) {
-        return null;
-    }
-
-    return {
-        username: userData.username,
-        name: userData.name,
-        surname: userData.surname,
-        lastname: userData.lastname,
-        birthDate: userData.birthDate,
-        email: userData.email,
-        level: userData.level,
-        maxExperience: userData.maxExperience,
-        experience: userData.experience
-    };
-}
-
-/**
- * Obté només les dades personals protegides de l'usuari.
- *
- * @param {string} uid
- * @returns {Promise<Partial<Pick<UserDocument, "username" | "name" | "surname" | "lastname" | "birthDate" | "email">> | null>}
+ * @returns {Promise<Pick<UserDocument, "username" | "name" | "surname" | "lastname" | "birthDate" | "email"> | null>}
  */
 export async function getPersonalUserData(uid) {
     const userData = await getUserData(uid);
@@ -573,7 +449,7 @@ export async function getPersonalUserData(uid) {
 }
 
 /**
- * Obté només l'estat de nivell/experiència de l'usuari.
+ * Obté només l'estat de nivell/experiència.
  *
  * @param {string} uid
  * @returns {Promise<Pick<UserDocument, "level" | "maxExperience" | "experience"> | null>}
@@ -593,31 +469,54 @@ export async function getUserLevelState(uid) {
 }
 
 /**
+ * Obté el progrés del nivell de l'usuari.
+ *
+ * @param {string} uid
+ * @returns {Promise<{ level: number, experience: number, maxExperience: number, progress: number } | null>}
+ */
+export async function getUserLevelProgress(uid) {
+    const levelState = await getUserLevelState(uid);
+
+    if (!levelState) {
+        return null;
+    }
+
+    return getProgressFromLevelState(levelState);
+}
+
+/**
  * Obté la configuració d'un usuari.
- * Si el camp no existeix, retorna la configuració per defecte.
+ * Si el document no existeix, retorna null.
+ * Si existeix però és buit, retorna la configuració per defecte.
  *
  * @param {string} uid
  * @returns {Promise<UserSettings | null>}
  */
 export async function getUserSettings(uid) {
-    const userData = await getUserData(uid);
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const snap = await getDoc(getUserSettingsRef(normalizedUid));
 
-    if (!userData) {
+    if (!snap.exists()) {
         return null;
     }
 
     return {
         ...getDefaultUserSettings(),
-        ...userData.settings
+        ...snap.data()
     };
 }
 
 /**
  * Crea un nou usuari a Firestore.
- * El document es desa a `users/{uid}`.
+ * Desa:
+ * - `userData/{uid}` amb les dades del perfil
+ * - `userSettings/{uid}` amb la configuració per defecte
  *
- * `friends` i `dailyMisions` s'inicialitzen com arrays buits.
- * `settings` es crea automàticament amb els valors per defecte.
+ * A més, genera les missions diàries inicials des de `quests`
+ * i les desa dins `userData/{uid}`.
+ *
+ * Si les col·leccions no existeixen, Firestore les crearà automàticament
+ * en crear aquests documents.
  *
  * @param {import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").User | null} user
  * @param {UserExtraData} extraData
@@ -626,6 +525,7 @@ export async function getUserSettings(uid) {
 export async function addNewUser(user, extraData) {
     const uid = validateAuthUser(user);
     const newUser = await buildNewUserData(user, extraData);
+    const defaultSettings = getDefaultUserSettings();
 
     if (await userUidExists(uid)) {
         throw new Error("Aquest usuari ja existeix.");
@@ -639,9 +539,37 @@ export async function addNewUser(user, extraData) {
         throw new Error("El correu electrònic ja està en ús.");
     }
 
-    await setDoc(getUserRef(uid), newUser);
+    await runTransaction(db, async (transaction) => {
+        const userDataRef = getUserDataRef(uid);
+        const userSettingsRef = getUserSettingsRef(uid);
 
-    return newUser;
+        const [userDataSnap, userSettingsSnap] = await Promise.all([
+            transaction.get(userDataRef),
+            transaction.get(userSettingsRef)
+        ]);
+
+        if (userDataSnap.exists() || userSettingsSnap.exists()) {
+            throw new Error("Aquest usuari ja existeix.");
+        }
+
+        transaction.set(userDataRef, newUser);
+        transaction.set(userSettingsRef, defaultSettings);
+    });
+
+    try {
+        await updateDailyMissionsIfNeeded(uid);
+    } catch (error) {
+        console.error("No se pudieron generar las misiones iniciales:", error);
+        // No lanzamos error aquí para no romper el registro del usuario
+    }
+
+    const createdUser = await getUserData(uid);
+
+    if (!createdUser) {
+        throw new Error("No s'han pogut recuperar les dades del nou usuari.");
+    }
+
+    return createdUser;
 }
 
 /**
@@ -652,11 +580,12 @@ export async function addNewUser(user, extraData) {
  * - level, maxExperience, experience
  *
  * @param {string} uid
- * @param {PublicUserUpdateData} data
+ * @param {Partial<UserDocument>} data
  * @returns {Promise<void>}
  */
 export async function updateUserData(uid, data) {
-    const userRef = getUserRef(uid);
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const userRef = getUserDataRef(normalizedUid);
     const sanitizedData = sanitizePublicUserUpdateData(data);
 
     await runTransaction(db, async (transaction) => {
@@ -672,38 +601,60 @@ export async function updateUserData(uid, data) {
 
 /**
  * Actualitza parcialment la configuració d'un usuari.
- * Si el document no té configuració, es crea amb els valors per defecte
- * i s'hi apliquen els canvis indicats.
+ * Si el document de configuració no existeix, es crea.
  *
  * @param {string} uid
  * @param {Partial<UserSettings>} settings
  * @returns {Promise<UserSettings>}
  */
 export async function updateUserSettings(uid, settings) {
-    const userRef = getUserRef(uid);
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const userDataRef = getUserDataRef(normalizedUid);
+    const userSettingsRef = getUserSettingsRef(normalizedUid);
     const sanitizedSettings = sanitizeUserSettings(settings);
 
     return await runTransaction(db, async (transaction) => {
+        const [userDataSnap, userSettingsSnap] = await Promise.all([
+            transaction.get(userDataRef),
+            transaction.get(userSettingsRef)
+        ]);
+
+        if (!userDataSnap.exists()) {
+            throw new Error("L'usuari no existeix.");
+        }
+
+        const mergedSettings = {
+            ...getDefaultUserSettings(),
+            ...(userSettingsSnap.exists() ? userSettingsSnap.data() : {}),
+            ...sanitizedSettings
+        };
+
+        transaction.set(userSettingsRef, mergedSettings, { merge: true });
+
+        return mergedSettings;
+    });
+}
+
+/**
+ * Wrapper intern per actualitzar dades protegides.
+ *
+ * @param {string} uid
+ * @param {Partial<UserDocument>} data
+ * @returns {Promise<void>}
+ */
+export async function updateProtectedUserData(uid, data) {
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const userRef = getUserDataRef(normalizedUid);
+    const sanitizedData = sanitizeProtectedUserUpdateData(data);
+
+    await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(userRef);
 
         if (!snap.exists()) {
             throw new Error("L'usuari no existeix.");
         }
 
-        const currentUser = /** @type {UserDocument} */ (snap.data());
-        const mergedSettings = {
-            ...getDefaultUserSettings(),
-            ...currentUser.settings,
-            ...sanitizedSettings
-        };
-
-        transaction.set(
-            userRef,
-            { settings: mergedSettings },
-            { merge: true }
-        );
-
-        return mergedSettings;
+        transaction.set(userRef, sanitizedData, { merge: true });
     });
 }
 
@@ -716,6 +667,18 @@ export async function updateUserSettings(uid, settings) {
  */
 export async function updatePersonalUserData(uid, data) {
     const sanitizedData = sanitizePersonalUserUpdateData(data);
+    await updateProtectedUserData(uid, sanitizedData);
+}
+
+/**
+ * Wrapper intern per actualitzar l'estat de nivell.
+ *
+ * @param {string} uid
+ * @param {Partial<Pick<UserDocument, "level" | "maxExperience" | "experience">>} data
+ * @returns {Promise<void>}
+ */
+export async function updateUserLevelState(uid, data) {
+    const sanitizedData = sanitizeLevelStateUpdateData(data);
     await updateProtectedUserData(uid, sanitizedData);
 }
 
@@ -775,7 +738,7 @@ export async function updateBirthDate(uid, birthDate) {
 }
 
 /**
- * Wrapper intern per actualitzar el correu electrònic.
+ * Wrapper intern per actualitzar l'email.
  *
  * @param {string} uid
  * @param {string} email
@@ -786,20 +749,18 @@ export async function updateEmail(uid, email) {
 }
 
 /**
- * Actualitza camps protegits d'un usuari.
- *
- * Aquesta funció està pensada per a fluxos interns i controlats.
- * No s'ha d'exposar a operacions de client no autoritzades.
+ * Estableix manualment l'estat de nivell.
  *
  * @param {string} uid
- * @param {ProtectedUserUpdateData} data
- * @returns {Promise<void>}
+ * @param {number} level
+ * @param {number} [experience=0]
+ * @returns {Promise<{ level: number, maxExperience: number, experience: number }>}
  */
-export async function updateProtectedUserData(uid, data) {
-    const userRef = getUserRef(uid);
-    const sanitizedData = sanitizeProtectedUserUpdateData(data);
+export async function setUserLevel(uid, level, experience = 0) {
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const userRef = getUserDataRef(normalizedUid);
 
-    await runTransaction(db, async (transaction) => {
+    return await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(userRef);
 
         if (!snap.exists()) {
@@ -807,186 +768,150 @@ export async function updateProtectedUserData(uid, data) {
         }
 
         const currentUser = /** @type {UserDocument} */ (snap.data());
+        const nextState = setLevelState(
+            {
+                level: currentUser.level,
+                maxExperience: currentUser.maxExperience,
+                experience: currentUser.experience
+            },
+            level,
+            experience
+        );
 
-        if (
-            sanitizedData.username &&
-            sanitizedData.username !== currentUser.username &&
-            await usernameExists(sanitizedData.username)
-        ) {
-            throw new Error("El nom d'usuari ja està en ús.");
-        }
-
-        if (
-            sanitizedData.email &&
-            sanitizedData.email !== currentUser.email &&
-            await emailExists(sanitizedData.email)
-        ) {
-            throw new Error("El correu electrònic ja està en ús.");
-        }
-
-        transaction.set(userRef, sanitizedData, { merge: true });
+        transaction.set(userRef, nextState, { merge: true });
+        return nextState;
     });
 }
 
 /**
- * Wrapper intern per persistir l'estat de nivell/experiència.
- *
- * @param {string} uid
- * @param {{ level: number, experience: number, maxExperience: number }} levelState
- * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
- */
-export async function updateUserLevelState(uid, levelState) {
-    const sanitizedData = sanitizeLevelStateUpdateData(levelState);
-    await updateProtectedUserData(uid, sanitizedData);
-
-    return /** @type {{ level: number, experience: number, maxExperience: number }} */ ({
-        level: sanitizedData.level,
-        experience: sanitizedData.experience,
-        maxExperience: sanitizedData.maxExperience
-    });
-}
-
-/**
- * Assigna directament l'estat de nivell/experiència.
- * Útil per a migracions, correccions o administració controlada.
- *
- * @param {string} uid
- * @param {number} level
- * @param {number} experience
- * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
- */
-export async function setUserLevelState(uid, level, experience) {
-    const nextState = setLevelState(level, experience);
-    return await updateUserLevelState(uid, nextState);
-}
-
-/**
- * Afegeix experiència a un usuari de manera segura i atòmica.
- * Gestiona automàticament les pujades de nivell necessàries.
- *
- * @param {string} uid
- * @param {number} gainedExperience
- * @returns {Promise<{
- *   level: number,
- *   experience: number,
- *   maxExperience: number,
- *   levelsGained: number
- * }>}
- */
-export async function addUserExperience(uid, gainedExperience) {
-    const normalizedGainedExperience = validateExperience(gainedExperience);
-    const currentState = await getUserLevelState(uid);
-
-    if (!currentState) {
-        throw new Error("L'usuari no existeix.");
-    }
-
-    const result = addExperienceToLevelState(currentState, normalizedGainedExperience);
-    await updateUserLevelState(uid, result);
-    return result;
-}
-
-/**
- * Fa pujar l'usuari un nombre concret de nivells.
- * Reinicia l'experiència actual a 0 per evitar estats inconsistents.
- *
- * @param {string} uid
- * @param {number} levelsToAdd
- * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
- */
-export async function levelUpUser(uid, levelsToAdd = 1) {
-    const currentState = await getUserLevelState(uid);
-
-    if (!currentState) {
-        throw new Error("L'usuari no existeix.");
-    }
-
-    const result = levelUpState(currentState, levelsToAdd);
-    await updateUserLevelState(uid, result);
-
-    return {
-        level: result.level,
-        experience: result.experience,
-        maxExperience: result.maxExperience
-    };
-}
-
-/**
- * Fa baixar l'usuari un nombre concret de nivells.
- * Reinicia l'experiència actual a 0 per mantenir coherència.
- *
- * @param {string} uid
- * @param {number} levelsToRemove
- * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
- */
-export async function levelDownUser(uid, levelsToRemove = 1) {
-    const currentState = await getUserLevelState(uid);
-
-    if (!currentState) {
-        throw new Error("L'usuari no existeix.");
-    }
-
-    const result = levelDownState(currentState, levelsToRemove);
-    await updateUserLevelState(uid, result);
-
-    return {
-        level: result.level,
-        experience: result.experience,
-        maxExperience: result.maxExperience
-    };
-}
-
-/**
- * Estableix l'experiència actual dins del nivell de manera controlada.
- * No permet valors iguals o superiors al màxim del nivell.
+ * Estableix manualment l'experiència de l'usuari dins el seu nivell actual.
  *
  * @param {string} uid
  * @param {number} experience
- * @returns {Promise<{ level: number, experience: number, maxExperience: number }>}
+ * @returns {Promise<{ level: number, maxExperience: number, experience: number }>}
  */
 export async function setUserExperience(uid, experience) {
-    const currentState = await getUserLevelState(uid);
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const userRef = getUserDataRef(normalizedUid);
 
-    if (!currentState) {
-        throw new Error("L'usuari no existeix.");
-    }
+    return await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(userRef);
 
-    const result = setExperienceInLevelState(currentState, experience);
-    await updateUserLevelState(uid, result);
+        if (!snap.exists()) {
+            throw new Error("L'usuari no existeix.");
+        }
 
-    return {
-        level: result.level,
-        experience: result.experience,
-        maxExperience: result.maxExperience
-    };
+        const currentUser = /** @type {UserDocument} */ (snap.data());
+        const nextState = setExperienceInLevelState(
+            {
+                level: currentUser.level,
+                maxExperience: currentUser.maxExperience,
+                experience: currentUser.experience
+            },
+            experience
+        );
+
+        transaction.set(userRef, nextState, { merge: true });
+        return nextState;
+    });
 }
 
 /**
- * Retorna un resum de progrés de nivell de l'usuari.
+ * Afegeix experiència a l'usuari i aplica pujades de nivell automàtiques si cal.
  *
  * @param {string} uid
- * @returns {Promise<{
- *   level: number,
- *   experience: number,
- *   maxExperience: number,
- *   remainingExperience: number,
- *   progress: number
- * } | null>}
+ * @param {number} amount
+ * @returns {Promise<{ level: number, maxExperience: number, experience: number, progress: number }>}
  */
-export async function getUserLevelProgress(uid) {
-    const levelState = await getUserLevelState(uid);
+export async function addUserExperience(uid, amount) {
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const userRef = getUserDataRef(normalizedUid);
 
-    if (!levelState) {
-        return null;
-    }
+    return await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(userRef);
 
-    const progress = getProgressFromLevelState(levelState);
+        if (!snap.exists()) {
+            throw new Error("L'usuari no existeix.");
+        }
 
-    return {
-        level: progress.level,
-        experience: progress.experience,
-        maxExperience: progress.maxExperience,
-        remainingExperience: progress.remainingExperience,
-        progress: progress.progress
-    };
+        const currentUser = /** @type {UserDocument} */ (snap.data());
+        const nextState = addExperienceToLevelState(
+            {
+                level: currentUser.level,
+                maxExperience: currentUser.maxExperience,
+                experience: currentUser.experience
+            },
+            amount
+        );
+
+        transaction.set(userRef, nextState, { merge: true });
+
+        return getProgressFromLevelState(nextState);
+    });
+}
+
+/**
+ * Puja de nivell manualment.
+ *
+ * @param {string} uid
+ * @param {number} [amount=1]
+ * @returns {Promise<{ level: number, maxExperience: number, experience: number }>}
+ */
+export async function levelUpUser(uid, amount = 1) {
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const userRef = getUserDataRef(normalizedUid);
+
+    return await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(userRef);
+
+        if (!snap.exists()) {
+            throw new Error("L'usuari no existeix.");
+        }
+
+        const currentUser = /** @type {UserDocument} */ (snap.data());
+        const nextState = levelUpState(
+            {
+                level: currentUser.level,
+                maxExperience: currentUser.maxExperience,
+                experience: currentUser.experience
+            },
+            amount
+        );
+
+        transaction.set(userRef, nextState, { merge: true });
+        return nextState;
+    });
+}
+
+/**
+ * Baixa de nivell manualment.
+ *
+ * @param {string} uid
+ * @param {number} [amount=1]
+ * @returns {Promise<{ level: number, maxExperience: number, experience: number }>}
+ */
+export async function levelDownUser(uid, amount = 1) {
+    const normalizedUid = validateRequiredText(uid, "uid");
+    const userRef = getUserDataRef(normalizedUid);
+
+    return await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(userRef);
+
+        if (!snap.exists()) {
+            throw new Error("L'usuari no existeix.");
+        }
+
+        const currentUser = /** @type {UserDocument} */ (snap.data());
+        const nextState = levelDownState(
+            {
+                level: currentUser.level,
+                maxExperience: currentUser.maxExperience,
+                experience: currentUser.experience
+            },
+            amount
+        );
+
+        transaction.set(userRef, nextState, { merge: true });
+        return nextState;
+    });
 }
