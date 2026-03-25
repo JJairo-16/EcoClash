@@ -35,7 +35,7 @@
             <a href="#" class="navbar-link">Leaderboard</a>
           </li>
           <li class="navbar-item">
-            <a href="#" class="navbar-link">Social</a>
+            <a href="social.html" class="navbar-link">Social</a>
           </li>
           <li class="navbar-item">
             <a href="#" class="navbar-link">Perfil</a>
@@ -48,12 +48,113 @@
     </nav>
   </header>
 
-  <!-- Contenidor Principal -->
+  <!-- Contenedor Principal -->
   <main class="main-content">
-    <section class="hero">
-      <h1>Benvingut a EcoClash</h1>
-      <p>Reptes verds per a un món més sostenible</p>
+    
+    <!-- DASHBOARD SECTION -->
+    <section class="dashboard">
+      
+      <!-- Bienvenida -->
+      <div class="welcome-card card">
+        <h1>¡Benvingut a EcoClash!</h1>
+        <p>Participa en reptes sostenibles i competeix amb amics per guanyar el podi</p>
+      </div>
+
+      <!-- Tu Progreso -->
+      <section class="dashboard-section">
+        <h2 class="section-title">El teu Progrés</h2>
+        <div class="progress-card card">
+          <div class="progress-header">
+            <span class="progress-label">Nivel 1</span>
+            <span class="progress-percentage">10%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 10%;"></div>
+          </div>
+          <p class="progress-text">Pròxim nivell en 90 punts</p>
+        </div>
+      </section>
+
+      <!-- Reto Semanal -->
+      <section class="dashboard-section">
+        <h2 class="section-title">Repte diari actiu</h2>
+        <div class="challenge-card card">
+          <div class="challenge-header">
+            <h3 class="challenge-title">Setmana sense plàstics</h3>
+            <span class="badge badge-active">Actiu</span>
+          </div>
+          <p class="challenge-description">Fes 5 Km en bicicleta avui.</p>
+          
+          <div class="progress-bar mt-3">
+            <div class="progress-fill" style="width: 50%;"></div>
+          </div>
+          <p class="progress-text">50% completat (2.5 de 5 Km)</p>
+          
+          <div class="challenge-actions">
+            <button class="btn btn-primary">Registrar Acció</button>
+            <button class="btn btn-secondary">Veure Detalls</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Calculadora de Huella -->
+      <section class="dashboard-section">
+        <h2 class="section-title">Calculadora de Huella Express</h2>
+        <div class="calculator-card card">
+          <form class="form-group">
+            <div class="form-row number-field">  
+              <label for="transport-km" class="form-label">Km en transporte hoy:</label>
+              <div class="number-control-wrapper">
+                <input type="number" id="transport-km" class="form-input number-input" placeholder="0 km" min="0" step="0.1">
+                <div class="number-badges">
+                  <button type="button" id="transport-up" class="btn btn-secondary number-btn" aria-label="Augmentar km">▲</button>
+                  <button type="button" id="transport-down" class="btn btn-secondary number-btn" aria-label="Disminuir km">▼</button>
+                </div>
+              </div>
+              <small class="form-help">En coche, autobús o bicicleta</small>
+            </div>
+
+            <div class="form-row number-field">  
+              <label for="energy-consumption" class="form-label">Consum energètic (kWh):</label>
+              <div class="number-control-wrapper">
+                <input type="number" id="energy-consumption" class="form-input number-input" placeholder="0 kWh" min="0" step="0.1" >
+                <div class="number-badges">
+                  <button type="button" id="energy-up" class="btn btn-secondary number-btn" aria-label="Augmentar consum">▲</button>
+                  <button type="button" id="energy-down" class="btn btn-secondary number-btn" aria-label="Disminuir consum">▼</button>
+                </div>
+              </div>
+              <small class="form-help">Estimació d'avui</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-4">Calcular Huella</button>
+          </form>
+          
+          <div id="carbon-result" class="carbon-result" style="display: none;">
+            <p>Tu huella de carbono estimada:</p>
+            <p class="carbon-value"><span id="carbon-value">0</span> kg CO₂</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Acceso Rápido -->
+      <section class="dashboard-section">
+        <h2 class="section-title">Acceso Rápido</h2>
+        <div class="quick-access">
+          <a href="#" class="quick-link card">
+            <span class="quick-icon">🏆</span>
+            <h3>Ver Ránquing</h3>
+            <p>Compite con amigos</p>
+          </a>
+          <a href="#" class="quick-link card">
+            <span class="quick-icon">💬</span>
+            <h3>Comunidad</h3>
+            <p>Descubre nuevos retos</p>
+          </a>
+        </div>
+      </section>
+
     </section>
+
   </main>
 
   <!-- Footer -->
@@ -63,5 +164,54 @@
     </div>
   </footer>
 
+  <script>
+    (function(){
+      // Función para manejar controles numéricos
+      function setupNumberControls(inputId, upBtnId, downBtnId) {
+        const input = document.getElementById(inputId);
+        const btnUp = document.getElementById(upBtnId);
+        const btnDown = document.getElementById(downBtnId);
+
+        function parseValue(value){
+          const asNumber = Number(value);
+          return Number.isNaN(asNumber) ? 0 : asNumber;
+        }
+
+        function normalizeStep(value, step){
+          // Mejor precisión decimal para evitar errores de punto flotante
+          const decimals = step.toString().split('.')[1]?.length || 0;
+          return Number((Math.round(value / step) * step).toFixed(decimals));
+        }
+
+        function updateValue(newValue){
+          const min = input.min !== '' ? parseFloat(input.min) : -Infinity;
+          const max = input.max !== '' ? parseFloat(input.max) : Infinity;
+          const step = parseFloat(input.step) || 1;
+
+          if (newValue < min) newValue = min;
+          if (newValue > max) newValue = max;
+
+          input.value = normalizeStep(newValue, step);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        btnUp.addEventListener('click', function(){
+          const current = parseValue(input.value);
+          const step = parseFloat(input.step) || 1;
+          updateValue(current + step);
+        });
+
+        btnDown.addEventListener('click', function(){
+          const current = parseValue(input.value);
+          const step = parseFloat(input.step) || 1;
+          updateValue(current - step);
+        });
+      }
+
+      // Configurar controles para ambos campos
+      setupNumberControls('transport-km', 'transport-up', 'transport-down');
+      setupNumberControls('energy-consumption', 'energy-up', 'energy-down');
+    })();
+  </script>
 </body>
 </html>
