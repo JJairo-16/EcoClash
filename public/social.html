@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="EcoClash - Comunitat Social: amics, peticions i perfils">
+  <meta name="theme-color" content="#1A2F25">
+  <title>EcoClash - Comunitat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="navbar-container">
+        <a href="dashboard.html" class="navbar-logo">
+          <img src="img/EcoClash.webp" alt="EcoClash Logo" class="navbar-logo-img">
+        </a>
+        <ul class="navbar-menu">
+          <li class="navbar-item"><a href="dashboard.html" class="navbar-link">Dashboard</a></li>
+          <li class="navbar-item"><a href="#" class="navbar-link">Leaderboard</a></li>
+          <li class="navbar-item"><a href="social.html" class="navbar-link active">Social</a></li>
+          <li class="navbar-item"><a href="#" class="navbar-link">Perfil</a></li>
+          <li class="navbar-item"><a href="#" class="navbar-link">Configuració</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main-content">
+    <section class="dashboard">
+      <div class="welcome-card card">
+        <h1>COMUNITAT (Social)</h1>
+        <p>Gestiona amics i peticions per millorar la teva ecosfera.</p>
+      </div>
+
+      <section class="dashboard-section" style="display:flex; gap:1rem; flex-wrap:wrap;">
+        <div class="card" style="flex:1; min-width:180px; padding:1rem; text-align:center;">
+          <h3>AMICS</h3>
+          <p style="font-size:1.4rem; font-weight:700;">12</p>
+        </div>
+        <div class="card" style="flex:1; min-width:180px; padding:1rem; text-align:center;">
+          <h3>PETICIONS</h3>
+          <p style="font-size:1.4rem; font-weight:700;">3</p>
+        </div>
+      </section>
+
+      <section class="dashboard-section">
+        <input id="search-friends" class="form-input" type="search" placeholder="🔍 Cerca amics..." style="width:100%;" />
+      </section>
+
+      <section class="dashboard-section" id="friends-list-container">
+        <h2 class="section-title">Llista d'amics</h2>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2026 Clash Labs - Contacte: contact@clashlabs.cat</p>
+    </div>
+  </footer>
+
+  <script>
+    const friends = [
+      {handle: '@eco_julia', level: 5, co2: 42.7},
+      {handle: '@jairo_green', level: 3, co2: 15.2}
+    ];
+
+    function renderFriends(filter = '') {
+      const container = document.getElementById('friends-list-container');
+      const cards = friends
+        .filter(f => f.handle.toLowerCase().includes(filter.toLowerCase()))
+        .map(f => `
+          <article class="card" style="margin-bottom:1rem;">
+            <p>👤 ${f.handle} &nbsp; Nivell ${f.level}</p>
+            <p>🌿 ${f.co2}kg CO2</p>
+            <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+              <button class="btn btn-secondary">PERFIL</button>
+            </div>
+          </article>
+        `).join('');
+
+      container.innerHTML = '<h2 class="section-title">Llista d\'amics</h2>' + cards;
+    }
+
+    document.getElementById('search-friends').addEventListener('input', e => {
+      renderFriends(e.target.value);
+    });
+
+    renderFriends();
+  </script>
+</body>
+</html>
