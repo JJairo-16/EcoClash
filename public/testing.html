@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testing Firebase</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --line: #1f2937;
+      --ok: #16a34a;
+      --warn: #d97706;
+      --err: #dc2626;
+      --info: #2563eb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, Arial, sans-serif;
+      background: linear-gradient(180deg, #020617 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 12px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 22px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: rgba(17, 24, 39, .88);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+    }
+
+    .col-12 {
+      grid-column: span 12;
+    }
+
+    .col-8 {
+      grid-column: span 8;
+    }
+
+    .col-6 {
+      grid-column: span 6;
+    }
+
+    .col-4 {
+      grid-column: span 4;
+    }
+
+    @media (max-width: 1000px) {
+
+      .col-8,
+      .col-6,
+      .col-4 {
+        grid-column: span 12;
+      }
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0b1220;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      outline: none;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      color: white;
+      background: var(--info);
+    }
+
+    button:hover {
+      filter: brightness(1.06);
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    button.success {
+      background: var(--ok);
+    }
+
+    button.warning {
+      background: var(--warn);
+    }
+
+    button.danger {
+      background: var(--err);
+    }
+
+    .status {
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      border: 1px solid transparent;
+      font-weight: 700;
+    }
+
+    .status.info {
+      background: rgba(37, 99, 235, .14);
+      border-color: rgba(37, 99, 235, .35);
+      color: #93c5fd;
+    }
+
+    .status.ok {
+      background: rgba(22, 163, 74, .14);
+      border-color: rgba(22, 163, 74, .35);
+      color: #86efac;
+    }
+
+    .status.warn {
+      background: rgba(217, 119, 6, .14);
+      border-color: rgba(217, 119, 6, .35);
+      color: #fcd34d;
+    }
+
+    .status.err {
+      background: rgba(220, 38, 38, .14);
+      border-color: rgba(220, 38, 38, .35);
+      color: #fca5a5;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .small {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #0b1220;
+      margin: 0 8px 8px 0;
+      font-size: 13px;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+    }
+
+    @media (max-width: 700px) {
+      .kv {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .kv .k {
+      color: var(--muted);
+    }
+
+    .kv .v {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>Panel de pruebas completo</h1>
+    <p class="subtitle">
+      Esta página prueba el nuevo esquema: datos en <strong>userData</strong>, configuración en
+      <strong>userSettings</strong> y misiones diarias en
+      <strong>userDailyMissions/{uid}</strong>, generadas desde <strong>quests</strong>.
+    </p>
+
+    <div id="globalStatus" class="status info">Cargando módulos…</div>
+
+    <div class="grid">
+      <section class="card col-6">
+        <h2>Autenticación</h2>
+        <div class="row">
+          <span class="pill">Firebase app: <strong id="appStatus">…</strong></span>
+          <span class="pill">Auth: <strong id="authStatus">…</strong></span>
+          <span class="pill">Firestore: <strong id="dbStatus">…</strong></span>
+          <span class="pill">Usuario auth: <strong id="sessionStatus">ninguno</strong></span>
+        </div>
+
+        <div class="field">
+          <label for="authEmail">Email</label>
+          <input id="authEmail" type="email" placeholder="usuario@correo.com" />
+        </div>
+
+        <div class="field">
+          <label for="authPassword">Contraseña</label>
+          <input id="authPassword" type="password" placeholder="********" />
+        </div>
+
+        <div class="field">
+          <label for="authPassword2">Confirmar contraseña</label>
+          <input id="authPassword2" type="password" placeholder="********" />
+        </div>
+
+        <div class="row">
+          <button id="btnLogin">Iniciar sesión</button>
+          <button id="btnSignup" class="success">Registrar auth + docs</button>
+          <button id="btnLogout" class="danger">Cerrar sesión</button>
+          <button id="btnRefreshAll" class="secondary">Refrescar todo</button>
+        </div>
+      </section>
+
+      <section class="card col-6">
+        <h2>Sesión actual</h2>
+
+        <div class="kv">
+          <div class="k">UID</div>
+          <div class="v" id="currentUid">-</div>
+        </div>
+
+        <div class="kv">
+          <div class="k">Email</div>
+          <div class="v" id="currentEmail">-</div>
+        </div>
+
+        <div class="kv">
+          <div class="k">Docs en userData + userSettings</div>
+          <div class="v" id="currentExists">-</div>
+        </div>
+
+        <div class="kv">
+          <div class="k">Última lectura</div>
+          <div class="v" id="lastRefresh">-</div>
+        </div>
+
+        <div class="small" style="margin-top:10px;">
+          Refresco automático cada 10 segundos mientras haya sesión iniciada.
+        </div>
+
+        <div class="small" style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+          <label for="autoRefreshToggle" style="margin:0;">Auto refresh (cada 10s)</label>
+          <input type="checkbox" id="autoRefreshToggle" checked style="width:auto;" />
+        </div>
+      </section>
+
+      <section class="card col-12 hidden" id="profileCreateCard">
+        <h2>Crear documentos iniciales</h2>
+        <p class="small">
+          Crea <strong>userData/{uid}</strong> y <strong>userSettings/{uid}</strong>.
+          Las misiones diarias se generan aparte en <strong>userDailyMissions/{uid}</strong>.
+        </p>
+
+        <div class="grid" style="gap:12px;">
+          <div class="col-4">
+            <div class="field">
+              <label for="regUsername">Username</label>
+              <input id="regUsername" value="usuario_test_01" />
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="field">
+              <label for="regName">Nombre</label>
+              <input id="regName" value="Jairo" />
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="field">
+              <label for="regSurname">Primer apellido</label>
+              <input id="regSurname" value="Garcia" />
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="field">
+              <label for="regLastname">Segundo apellido</label>
+              <input id="regLastname" value="Lopez" />
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="field">
+              <label for="regPhone">Teléfono</label>
+              <input id="regPhone" value="+34600111222" />
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="field">
+              <label for="regBirthDate">Fecha de nacimiento</label>
+              <input id="regBirthDate" type="date" value="2007-01-01" />
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <button id="btnCreateUserDoc" class="success">Crear documentos del usuario</button>
+        </div>
+      </section>
+
+      <section class="card col-8">
+        <h2>Datos del usuario (userData)</h2>
+        <div id="userDataView" class="mono">Sin datos.</div>
+      </section>
+
+      <section class="card col-4">
+        <h2>Configuración (userSettings)</h2>
+
+        <div class="field">
+          <label><input id="settingNotifications" type="checkbox" style="width:auto;" /> Notificaciones</label>
+        </div>
+
+        <div class="field">
+          <label><input id="settingBigLetters" type="checkbox" style="width:auto;" /> Letras grandes</label>
+        </div>
+
+        <div class="field">
+          <label for="settingPrivacy">Privacidad de perfil</label>
+          <select id="settingPrivacy">
+            <option value="0">Privado</option>
+            <option value="1">Solo amigos</option>
+            <option value="2">Público</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="settingDarkTheme">Tema</label>
+          <select id="settingDarkTheme">
+            <option value="true">Oscuro</option>
+            <option value="false">Claro</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <button id="btnSaveSettings" class="warning">Guardar settings</button>
+        </div>
+
+        <div id="settingsView" class="mono small" style="margin-top:12px;">-</div>
+      </section>
+
+      <section class="card col-6">
+        <h2>Nivel y experiencia</h2>
+
+        <div class="field">
+          <label for="xpAmount">XP a añadir</label>
+          <input id="xpAmount" type="number" min="0" value="50" />
+        </div>
+
+        <div class="row">
+          <button id="btnAddXp" class="success">Añadir XP</button>
+          <button id="btnLevelUp" class="warning">+1 nivel</button>
+          <button id="btnLevelDown" class="warning">-1 nivel</button>
+        </div>
+
+        <div id="levelStateView" class="mono small" style="margin-top:12px;">-</div>
+      </section>
+
+      <section class="card col-6">
+        <h2>Progreso</h2>
+        <div id="levelProgressView" class="mono small">-</div>
+      </section>
+
+      <section class="card col-12">
+        <h2>Misiones diarias</h2>
+
+        <div class="row" style="margin-bottom:10px;">
+          <button id="btnRefreshMissions" class="warning">Regenerar misiones desde quests</button>
+        </div>
+
+        <div id="missionsView" class="mono">-</div>
+      </section>
+
+      <section class="card col-12">
+        <h2>Pruebas de misión</h2>
+
+        <div class="grid" style="gap:12px;">
+          <div class="col-4">
+            <div class="field">
+              <label for="missionIdInput">Mission ID</label>
+              <input id="missionIdInput" list="missionsDatalist" placeholder="quest_1" />
+              <datalist id="missionsDatalist"></datalist>
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="field">
+              <label for="missionProgressAmount">Progreso a añadir</label>
+              <input id="missionProgressAmount" type="number" step="0.01" min="0.01" value="1" />
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="field">
+              <label for="missionActiveSelect">Estado active</label>
+              <select id="missionActiveSelect">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-bottom:12px;">
+          <button id="btnLoadMission" class="secondary">Leer misión</button>
+          <button id="btnStartMission" class="success">Iniciar misión</button>
+          <button id="btnSetMissionActive" class="warning">Cambiar active</button>
+          <button id="btnAddMissionProgress" class="success">Añadir progreso</button>
+          <button id="btnResetMission" class="danger">Resetear misión</button>
+        </div>
+
+        <div class="small" style="margin-bottom:10px;">
+          La misión debe existir dentro de <strong>userDailyMissions/{uid}.missions</strong>.
+          Al iniciar se guarda <strong>startTimestamp</strong>; al completar, <strong>endTimestamp</strong>.
+        </div>
+
+        <div id="selectedMissionView" class="mono">-</div>
+      </section>
+
+      <section class="card col-12">
+        <h2>Consola</h2>
+
+        <div class="row" style="margin-bottom:10px;">
+          <button id="btnClearLog" class="secondary">Limpiar consola</button>
+        </div>
+
+        <div id="logView" class="mono"></div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module">
+    import { app, auth, db } from "./js/config.js";
+    import {
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    import {
+      userExists,
+      addNewUser,
+      getUserData,
+      getUserSettings,
+      getUserLevelState,
+      getUserLevelProgress,
+      addUserExperience,
+      levelUpUser,
+      levelDownUser,
+      updateUserSettings
+    } from "./js/lib/user-data-lib.js";
+
+    import {
+      forceRefreshDailyMissions,
+      updateDailyMissionsIfNeeded
+    } from "./js/lib/random-quest-selector.js";
+
+    import {
+      startUserMission,
+      setUserMissionActive,
+      addProgressToUserMission,
+      resetUserMission
+    } from "./js/lib/mission-progress-lib.js";
+
+    import * as validators from "./js/lib/user-validators.js";
+
+    const $ = (id) => document.getElementById(id);
+
+    const AUTO_REFRESH_MS = 10000;
+    const MAX_LOG_ENTRIES = 100;
+
+    let currentUser = null;
+    let refreshTimer = null;
+    let refreshInFlight = false;
+
+    const viewState = {
+      userExists: null,
+      userData: null,
+      settings: null,
+      levelState: null,
+      levelProgress: null,
+      dailyMissions: []
+    };
+
+    function setStatus(message, type = "info") {
+      const el = $("globalStatus");
+      el.textContent = message;
+      el.className = "status " + type;
+    }
+
+    function jsonReplacer(key, value) {
+      if (value instanceof Date) return value.toISOString();
+
+      if (value && typeof value === "object" && typeof value.toDate === "function") {
+        try {
+          return value.toDate().toISOString();
+        } catch {
+          return value;
+        }
+      }
+
+      return value;
+    }
+
+    function stringify(value) {
+      if (typeof value === "string") return value;
+
+      try {
+        return JSON.stringify(value, jsonReplacer, 2);
+      } catch {
+        return String(value);
+      }
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function log(title, value, type = "info") {
+      const line = document.createElement("div");
+      line.style.padding = "10px 0";
+      line.style.borderBottom = "1px solid rgba(255,255,255,.08)";
+
+      const time = new Date().toLocaleTimeString();
+      let color = "#93c5fd";
+      if (type === "ok") color = "#86efac";
+      if (type === "warn") color = "#fcd34d";
+      if (type === "err") color = "#fca5a5";
+
+      line.innerHTML = `<div style="color:${color};font-weight:700;">[${escapeHtml(time)}] ${escapeHtml(title)}</div><div>${escapeHtml(stringify(value))}</div>`;
+
+      const logView = $("logView");
+      logView.prepend(line);
+
+      while (logView.children.length > MAX_LOG_ENTRIES) {
+        logView.lastChild.remove();
+      }
+    }
+
+    function requireCurrentUser() {
+      if (!currentUser?.uid) {
+        throw new Error("No hay usuario autenticado.");
+      }
+
+      return currentUser;
+    }
+
+    function getBrowserDarkMode() {
+      return globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
+    }
+
+    function parseBool(value) {
+      return value === "true";
+    }
+
+    function resetViewState() {
+      viewState.userExists = null;
+      viewState.userData = null;
+      viewState.settings = null;
+      viewState.levelState = null;
+      viewState.levelProgress = null;
+      viewState.dailyMissions = [];
+    }
+
+    function renderSessionInfo() {
+      $("sessionStatus").textContent = currentUser ? "activo" : "ninguno";
+      $("currentUid").textContent = currentUser?.uid ?? "-";
+      $("currentEmail").textContent = currentUser?.email ?? "-";
+
+      if (viewState.userExists === null) {
+        $("currentExists").textContent = "-";
+      } else {
+        $("currentExists").textContent = viewState.userExists ? "sí" : "no";
+      }
+    }
+
+    function renderUserData() {
+      $("userDataView").textContent = stringify(viewState.userData ?? "Sin datos.");
+    }
+
+    function renderSettings() {
+      $("settingsView").textContent = stringify(viewState.settings ?? "-");
+    }
+
+    function renderLevel() {
+      $("levelStateView").textContent = stringify(viewState.levelState ?? "-");
+      $("levelProgressView").textContent = stringify(viewState.levelProgress ?? "-");
+    }
+
+    function fillSettingsForm(settings) {
+      const effectiveDarkTheme =
+        settings?.darkTheme === null || settings?.darkTheme === undefined
+          ? getBrowserDarkMode()
+          : !!settings.darkTheme;
+
+      $("settingNotifications").checked = !!settings?.notifications;
+      $("settingBigLetters").checked = !!settings?.bigLetters;
+      $("settingPrivacy").value = String(settings?.profilePrivacy ?? 2);
+      $("settingDarkTheme").value = String(effectiveDarkTheme);
+    }
+
+    function updateMissionSuggestions() {
+      const datalist = $("missionsDatalist");
+      datalist.innerHTML = "";
+
+      for (const mission of viewState.dailyMissions ?? []) {
+        if (!mission?.missionId) continue;
+
+        const option = document.createElement("option");
+        option.value = mission.missionId;
+        option.label = mission.title ?? mission.missionId;
+        datalist.appendChild(option);
+      }
+    }
+
+    function renderMissions() {
+      $("missionsView").textContent = stringify(viewState.dailyMissions ?? []);
+      updateMissionSuggestions();
+      renderSelectedMission();
+    }
+
+    function getSelectedMissionFromState() {
+      const missionId = $("missionIdInput").value.trim();
+      if (!missionId) return null;
+
+      return (viewState.dailyMissions ?? []).find(
+        (mission) => mission?.missionId === missionId
+      ) ?? null;
+    }
+
+    function updateMissionProgressInputStep(mission) {
+      const input = $("missionProgressAmount");
+      input.step = mission?.allowDecimals ? "0.01" : "1";
+    }
+
+    function renderSelectedMission() {
+      const mission = getSelectedMissionFromState();
+
+      $("selectedMissionView").textContent = stringify(
+        mission ?? ($("missionIdInput").value.trim() ? "Missió no trobada." : "-")
+      );
+
+      updateMissionProgressInputStep(mission);
+
+      if (mission) {
+        $("missionActiveSelect").value = String(!!mission.active);
+      }
+    }
+
+    function renderAll() {
+      renderSessionInfo();
+      renderUserData();
+      renderSettings();
+      renderLevel();
+      renderMissions();
+    }
+
+    function showProfileCreateCard(show) {
+      $("profileCreateCard").classList.toggle("hidden", !show);
+    }
+
+    function markRefreshTime() {
+      $("lastRefresh").textContent = new Date().toLocaleTimeString();
+    }
+
+    function getExtraDataFromForm() {
+      const birthDateRaw = $("regBirthDate").value;
+
+      const extraData = {
+        username: generateUsername('pepitodmrd'),
+        name: $("regName").value.trim(),
+        surname: $("regSurname").value.trim(),
+        lastname: $("regLastname").value.trim(),
+        phoneNum: $("regPhone").value.trim(),
+        birthDate: birthDateRaw ? new Date(`${birthDateRaw}T00:00:00`) : null
+      };
+
+      validators.validateUsername(extraData.username);
+      validators.validateName(extraData.name, "name");
+      validators.validateSurname(extraData.surname);
+      validators.validateLastname(extraData.lastname);
+      validators.validatePhoneNum(extraData.phoneNum);
+      validators.validateBirthDate(extraData.birthDate);
+
+      return extraData;
+    }
+
+    function getMissionIdFromForm() {
+      const missionId = $("missionIdInput").value.trim();
+      if (!missionId) {
+        throw new Error("Debes indicar un missionId.");
+      }
+      return missionId;
+    }
+
+    function generateUsername(name = '') {
+      const base = name
+        .toLowerCase()
+        .normalize("NFD") // quita tildes
+        .replaceAll(/[\u0300-\u036f]/g, "")
+        .replaceAll(/[^a-z0-9]/g, "") // solo letras y números
+        .slice(0, 12); // límite
+
+      const random = Math.random().toString(36).slice(2, 6); // ej: a8f3
+
+      return (base || 'user') + random;
+    }
+
+    function getMissionProgressAmountFromForm() {
+      const amount = Number($("missionProgressAmount").value);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error("La cantidad de progreso debe ser mayor que 0.");
+      }
+      return amount;
+    }
+
+    function getMissionActiveFromForm() {
+      return parseBool($("missionActiveSelect").value);
+    }
+
+    async function refreshAllData() {
+      if (refreshInFlight) return;
+      refreshInFlight = true;
+
+      try {
+        $("appStatus").textContent = app ? "ok" : "error";
+        $("authStatus").textContent = auth ? "ok" : "error";
+        $("dbStatus").textContent = db ? "ok" : "error";
+
+        renderSessionInfo();
+
+        if (!currentUser) {
+          resetViewState();
+          showProfileCreateCard(false);
+          renderAll();
+          markRefreshTime();
+          setStatus("Sin usuario autenticado.", "info");
+          return;
+        }
+
+        const exists = await userExists(currentUser);
+        viewState.userExists = !!exists;
+        renderSessionInfo();
+        showProfileCreateCard(!exists);
+
+        if (!exists) {
+          viewState.userData = null;
+          viewState.settings = null;
+          viewState.levelState = null;
+          viewState.levelProgress = null;
+          viewState.dailyMissions = [];
+          renderAll();
+          markRefreshTime();
+          setStatus("Usuario autenticado, pero faltan los documentos iniciales.", "warn");
+          return;
+        }
+
+        const [
+          userData,
+          settings,
+          levelState,
+          levelProgress,
+          dailyMissions
+        ] = await Promise.all([
+          getUserData(currentUser.uid),
+          getUserSettings(currentUser.uid),
+          getUserLevelState(currentUser.uid),
+          getUserLevelProgress(currentUser.uid),
+          updateDailyMissionsIfNeeded(currentUser.uid)
+        ]);
+
+        viewState.userData = userData ?? null;
+        viewState.settings = settings ?? null;
+        viewState.levelState = levelState ?? null;
+        viewState.levelProgress = levelProgress ?? null;
+        viewState.dailyMissions = Array.isArray(dailyMissions) ? dailyMissions : [];
+
+        fillSettingsForm(viewState.settings ?? {});
+        showProfileCreateCard(false);
+        renderAll();
+        markRefreshTime();
+        setStatus("Datos sincronizados.", "ok");
+      } catch (error) {
+        setStatus(error?.message || String(error), "err");
+        log("refreshAllData", error?.message || String(error), "err");
+        throw error;
+      } finally {
+        refreshInFlight = false;
+      }
+    }
+
+    async function runAction(title, action, refreshMode = "all") {
+      const start = performance.now();
+
+      try {
+        setStatus(`${title}...`, "info");
+
+        const result = await action();
+
+        let refreshStart = performance.now();
+
+        if (refreshMode === "all") {
+          await refreshAllData();
+        } else if (refreshMode === "missions") {
+          const missions = await updateDailyMissionsIfNeeded(requireCurrentUser().uid);
+          viewState.dailyMissions = Array.isArray(missions) ? missions : [];
+          renderMissions();
+          markRefreshTime();
+        } else if (refreshMode === "settings") {
+          viewState.settings = await getUserSettings(requireCurrentUser().uid);
+          fillSettingsForm(viewState.settings ?? {});
+          renderSettings();
+          markRefreshTime();
+        } else if (refreshMode === "level") {
+          const uid = requireCurrentUser().uid;
+          const [levelState, levelProgress, userData] = await Promise.all([
+            getUserLevelState(uid),
+            getUserLevelProgress(uid),
+            getUserData(uid)
+          ]);
+
+          viewState.levelState = levelState ?? null;
+          viewState.levelProgress = levelProgress ?? null;
+          viewState.userData = userData ?? null;
+          renderUserData();
+          renderLevel();
+          markRefreshTime();
+        } else if (refreshMode === "missionViews") {
+          renderMissions();
+          markRefreshTime();
+        }
+
+        const actionMs = Math.round(refreshStart - start);
+        const totalMs = Math.round(performance.now() - start);
+
+        log(title, { result: result ?? "OK", actionMs, totalMs }, "ok");
+        setStatus(`${title}: ok`, "ok");
+
+        return result;
+      } catch (error) {
+        const totalMs = Math.round(performance.now() - start);
+        log(title, { error: error?.message || String(error), totalMs }, "err");
+        setStatus(error?.message || String(error), "err");
+        throw error;
+      }
+    }
+
+    async function loadSelectedMissionIntoView() {
+      const mission = getSelectedMissionFromState();
+      $("selectedMissionView").textContent = stringify(mission ?? "Missió no trobada.");
+      updateMissionProgressInputStep(mission);
+      return mission;
+    }
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      refreshTimer = setInterval(() => {
+        refreshAllData().catch((error) => {
+          log("autoRefresh", error?.message || String(error), "err");
+        });
+      }, AUTO_REFRESH_MS);
+    }
+
+    function stopAutoRefresh() {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+    }
+
+    function handleAutoRefreshToggle(enabled) {
+      if (enabled && currentUser) {
+        startAutoRefresh();
+        log("Auto refresh activado", `cada ${AUTO_REFRESH_MS / 1000}s`, "info");
+      } else {
+        stopAutoRefresh();
+        log("Auto refresh desactivado", "", "warn");
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user || null;
+      resetViewState();
+      renderAll();
+
+      const autoRefreshEnabled = $("autoRefreshToggle").checked;
+      if (currentUser && autoRefreshEnabled) startAutoRefresh();
+      else stopAutoRefresh();
+
+      log("onAuthStateChanged", {
+        uid: currentUser?.uid || null,
+        email: currentUser?.email || null
+      });
+
+      await refreshAllData();
+    });
+
+    $("btnLogin").addEventListener("click", async () => {
+      await runAction("Login", async () => {
+        const email = $("authEmail").value.trim();
+        const password = $("authPassword").value;
+
+        if (!email || !password) {
+          throw new Error("Email y contraseña obligatorios.");
+        }
+
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+        return { uid: credential.user.uid, email: credential.user.email };
+      }, "all");
+    });
+
+    $("btnSignup").addEventListener("click", async () => {
+      await runAction("Registro de auth + creación de documentos", async () => {
+        const email = $("authEmail").value.trim();
+        const password = $("authPassword").value;
+        const password2 = $("authPassword2").value;
+
+        if (!email || !password) {
+          throw new Error("Email y contraseña obligatorios.");
+        }
+
+        if (password !== password2) {
+          throw new Error("Las contraseñas no coinciden.");
+        }
+
+        const extraData = getExtraDataFromForm();
+        const credential = await createUserWithEmailAndPassword(auth, email, password);
+
+        try {
+          await addNewUser(credential.user, extraData);
+          await updateUserSettings(credential.user.uid, {
+            darkTheme: getBrowserDarkMode()
+          });
+          await updateDailyMissionsIfNeeded(credential.user.uid);
+        } catch (error) {
+          try {
+            await credential.user.delete();
+          } catch (deleteError) {
+            console.error("No se pudo revertir el usuario de Auth:", deleteError);
+          }
+          throw error;
+        }
+
+        return {
+          uid: credential.user.uid,
+          email: credential.user.email,
+          createdUserDocuments: true
+        };
+      }, "all");
+    });
+
+    $("btnLogout").addEventListener("click", async () => {
+      await runAction("Logout", async () => {
+        await signOut(auth);
+        return "Sesión cerrada";
+      }, "all");
+    });
+
+    $("btnRefreshAll").addEventListener("click", async () => {
+      await refreshAllData();
+    });
+
+    $("btnCreateUserDoc").addEventListener("click", async () => {
+      await runAction("Crear documentos del usuario", async () => {
+        const user = requireCurrentUser();
+
+        const createdUser = await addNewUser(user, getExtraDataFromForm());
+        await updateUserSettings(user.uid, {
+          darkTheme: getBrowserDarkMode()
+        });
+        await updateDailyMissionsIfNeeded(user.uid);
+
+        return createdUser;
+      }, "all");
+    });
+
+    $("btnSaveSettings").addEventListener("click", async () => {
+      await runAction("Guardar settings", async () => {
+        const user = requireCurrentUser();
+
+        const settings = {
+          notifications: $("settingNotifications").checked,
+          bigLetters: $("settingBigLetters").checked,
+          profilePrivacy: Number($("settingPrivacy").value),
+          darkTheme: parseBool($("settingDarkTheme").value)
+        };
+
+        const updated = await updateUserSettings(user.uid, settings);
+        viewState.settings = updated ?? settings;
+        renderSettings();
+        return updated;
+      }, "settings");
+    });
+
+    $("btnAddXp").addEventListener("click", async () => {
+      await runAction("Añadir XP", async () => {
+        const user = requireCurrentUser();
+        const amount = Number($("xpAmount").value);
+
+        if (!Number.isInteger(amount) || amount < 0) {
+          throw new Error("La XP debe ser un número entero mayor o igual a 0.");
+        }
+
+        return await addUserExperience(user.uid, amount);
+      }, "level");
+    });
+
+    $("btnLevelUp").addEventListener("click", async () => {
+      await runAction("Subir nivel", async () => {
+        const user = requireCurrentUser();
+        return await levelUpUser(user.uid, 1);
+      }, "level");
+    });
+
+    $("btnLevelDown").addEventListener("click", async () => {
+      await runAction("Bajar nivel", async () => {
+        const user = requireCurrentUser();
+        return await levelDownUser(user.uid, 1);
+      }, "level");
+    });
+
+    $("btnRefreshMissions").addEventListener("click", async () => {
+      await runAction("Regenerar misiones desde quests", async () => {
+        const user = requireCurrentUser();
+        const missions = await forceRefreshDailyMissions(user.uid);
+        viewState.dailyMissions = Array.isArray(missions) ? missions : [];
+        renderMissions();
+        return missions;
+      }, "missions");
+    });
+
+    $("btnLoadMission").addEventListener("click", async () => {
+      await runAction("Leer misión", async () => {
+        return await loadSelectedMissionIntoView();
+      }, "missionViews");
+    });
+
+    $("btnStartMission").addEventListener("click", async () => {
+      await runAction("Iniciar misión", async () => {
+        const user = requireCurrentUser();
+        const missionId = getMissionIdFromForm();
+        const result = await startUserMission(user.uid, missionId);
+
+        viewState.dailyMissions = (viewState.dailyMissions ?? []).map((mission) =>
+          mission?.missionId === missionId ? result : mission
+        );
+
+        $("selectedMissionView").textContent = stringify(result);
+        return result;
+      }, "missionViews");
+    });
+
+    $("btnSetMissionActive").addEventListener("click", async () => {
+      await runAction("Cambiar active de misión", async () => {
+        const user = requireCurrentUser();
+        const missionId = getMissionIdFromForm();
+        const active = getMissionActiveFromForm();
+        const result = await setUserMissionActive(user.uid, missionId, active);
+
+        viewState.dailyMissions = (viewState.dailyMissions ?? []).map((mission) =>
+          mission?.missionId === missionId ? result : mission
+        );
+
+        $("selectedMissionView").textContent = stringify(result);
+        return result;
+      }, "missionViews");
+    });
+
+    $("btnAddMissionProgress").addEventListener("click", async () => {
+      await runAction("Añadir progreso a misión", async () => {
+        const user = requireCurrentUser();
+        const missionId = getMissionIdFromForm();
+        const amount = getMissionProgressAmountFromForm();
+        const result = await addProgressToUserMission(user.uid, missionId, amount);
+
+        viewState.dailyMissions = (viewState.dailyMissions ?? []).map((mission) =>
+          mission?.missionId === missionId ? result : mission
+        );
+
+        $("selectedMissionView").textContent = stringify(result);
+        return result;
+      }, "missionViews");
+    });
+
+    $("btnResetMission").addEventListener("click", async () => {
+      await runAction("Resetear misión", async () => {
+        const user = requireCurrentUser();
+        const missionId = getMissionIdFromForm();
+        const result = await resetUserMission(user.uid, missionId);
+
+        viewState.dailyMissions = (viewState.dailyMissions ?? []).map((mission) =>
+          mission?.missionId === missionId ? result : mission
+        );
+
+        $("selectedMissionView").textContent = stringify(result);
+        return result;
+      }, "missionViews");
+    });
+
+    $("missionIdInput").addEventListener("input", () => {
+      renderSelectedMission();
+    });
+
+    $("btnClearLog").addEventListener("click", () => {
+      $("logView").textContent = "";
+    });
+
+    $("autoRefreshToggle").addEventListener("change", (e) => {
+      handleAutoRefreshToggle(e.target.checked);
+    });
+
+    $("appStatus").textContent = app ? "ok" : "error";
+    $("authStatus").textContent = auth ? "ok" : "error";
+    $("dbStatus").textContent = db ? "ok" : "error";
+
+    setStatus("Módulos cargados.", "ok");
+    log("Inicialización", {
+      appLoaded: !!app,
+      authLoaded: !!auth,
+      dbLoaded: !!db
+    }, "ok");
+
+    renderAll();
+    handleAutoRefreshToggle($("autoRefreshToggle").checked);
+    await refreshAllData();
+  </script>
+</body>
+
+</html>
