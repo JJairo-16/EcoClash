@@ -70,6 +70,36 @@ Això converteix la sostenibilitat en una experiència més atractiva i addictiv
 
 ---
 
+## ▌Dashboard i Funcionalitats
+
+Si l’usuari està registrat, és redirigit automàticament al **dashboard**; en cas contrari, és enviat a la pàgina de **login**.
+
+Al dashboard s’ha implementat la lògica de backend que permet mostrar informació clau de l’usuari, com ara:
+
+- **Sistema de nivells** amb una barra d’experiència  
+- Visualització dels **punts d’EXP necessaris** per pujar de nivell  
+- Representació dinàmica de l’estat de l’usuari a la interfície  
+
+### Missions
+
+El sistema de missions permet:
+
+- Visualitzar **missions disponibles**  
+- Veure una **barra de progrés** per a cada missió  
+- Opció de **començar missions**  
+- Rebre **experiència automàticament** en completar-les  
+
+### Petjada Ecològica
+
+S’ha implementat una funcionalitat per calcular la **petjada ecològica** de l’usuari basada en:
+
+- Els **quilòmetres recorreguts** segons el tipus de transport  
+- El **consum energètic** realitzat  
+
+Això permet obtenir una estimació personalitzada de l’impacte ambiental de cada usuari.
+
+---
+
 ## ▌Impacte Ambiental
 
 EcoClash no només és una app, sinó una eina de conscienciació:
