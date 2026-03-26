@@ -1,49 +1,71 @@
-function parseValue(value) {
-    const asNumber = Number(value);
-    return Number.isNaN(asNumber) ? 0 : asNumber;
-}
+import { setupNumberControl } from './components/number-control.js';
 
-function normalizeStep(value, step) {
-    // Mejor precisión decimal para evitar errores de punto flotante
-    const decimals = step.toString().split('.')[1]?.length || 0;
-    return Number((Math.round(value / step) * step).toFixed(decimals));
-}
+const CALCULATOR_FACTORS = {
+    transportKgCo2PerKm: 0.21,
+    energyKgCo2PerKwh: 0.23
+};
 
-function clamp(n, min, max) {
-    if (n < min) return min;
-    if (n > max) return max;
-    return n;
-}
+const calculatorDom = {
+    form: document.querySelector('.calculator-card .form-group'),
+    transportInput: document.getElementById('transport-km'),
+    energyInput: document.getElementById('energy-consumption'),
+    resultContainer: document.getElementById('carbon-result'),
+    resultValue: document.getElementById('carbon-value'),
+    transportUp: document.getElementById('transport-up'),
+    transportDown: document.getElementById('transport-down'),
+    energyUp: document.getElementById('energy-up'),
+    energyDown: document.getElementById('energy-down')
+};
 
-// Función para manejar controles numéricos
-function setupNumberControls(inputId, upBtnId, downBtnId) {
-    const input = document.getElementById(inputId);
-    const btnUp = document.getElementById(upBtnId);
-    const btnDown = document.getElementById(downBtnId);
-
-    function updateValue(newValue) {
-        const min = input.min === '' ? -Infinity : Number.parseFloat(input.min);
-        const max = input.max === '' ? Infinity : Number.parseFloat(input.max);
-        const step = Number.parseFloat(input.step) || 1;
-
-        input.value = normalizeStep(clamp(newValue, min, max), step);
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    btnUp.addEventListener('click', function () {
-        const current = parseValue(input.value);
-        const step = Number.parseFloat(input.step) || 1;
-        updateValue(current + step);
+function setupCalculatorNumberControls() {
+    setupNumberControl({
+        input: calculatorDom.transportInput,
+        incrementButton: calculatorDom.transportUp,
+        decrementButton: calculatorDom.transportDown
     });
 
-    btnDown.addEventListener('click', function () {
-        const current = parseValue(input.value);
-        const step = Number.parseFloat(input.step) || 1;
-        updateValue(current - step);
+    setupNumberControl({
+        input: calculatorDom.energyInput,
+        incrementButton: calculatorDom.energyUp,
+        decrementButton: calculatorDom.energyDown
     });
 }
 
-// Configurar controles para ambos campos
-setupNumberControls('transport-km', 'transport-up', 'transport-down');
-setupNumberControls('energy-consumption', 'energy-up', 'energy-down');
+function calculateCarbonFootprint({ transportKm, energyConsumption }) {
+    const transportEmissions = transportKm * CALCULATOR_FACTORS.transportKgCo2PerKm;
+    const energyEmissions = energyConsumption * CALCULATOR_FACTORS.energyKgCo2PerKwh;
+    return transportEmissions + energyEmissions;
+}
 
+function parseInputValue(input) {
+    const parsedValue = Number.parseFloat(input?.value ?? '0');
+    return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 0;
+}
+
+function renderCarbonResult(value) {
+    if (!calculatorDom.resultContainer || !calculatorDom.resultValue) return;
+
+    calculatorDom.resultValue.textContent = value.toFixed(2);
+    calculatorDom.resultContainer.style.display = 'block';
+}
+
+function bindCalculatorForm() {
+    if (!calculatorDom.form) return;
+
+    calculatorDom.form.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const transportKm = parseInputValue(calculatorDom.transportInput);
+        const energyConsumption = parseInputValue(calculatorDom.energyInput);
+
+        const carbonFootprint = calculateCarbonFootprint({
+            transportKm,
+            energyConsumption
+        });
+
+        renderCarbonResult(carbonFootprint);
+    });
+}
+
+setupCalculatorNumberControls();
+bindCalculatorForm();

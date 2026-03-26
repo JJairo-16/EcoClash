@@ -735,7 +735,7 @@
       const birthDateRaw = $("regBirthDate").value;
 
       const extraData = {
-        username: generateUsername('pepitodmrd'),
+        username: (($('regUsername')?.value || '').trim() || generateUsername($("regName").value.trim())),
         name: $("regName").value.trim(),
         surname: $("regSurname").value.trim(),
         lastname: $("regLastname").value.trim(),

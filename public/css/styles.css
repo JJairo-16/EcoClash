@@ -1,8 +1,7 @@
 /* ========================================
-   ECOCLASH - ESTILOS BASE
-   Paleta "Action-Green" - Dark Mode
-
-   ======================================== */
+   ECOCLASH - ESTILS BASE
+   Paleta "Action-Green" - Mode fosc
+======================================== */
 
 /* Variables CSS */
 :root {
@@ -15,7 +14,7 @@
 	--grey-light: #9ca3af;
 	--grey-dark: #1f2937;
 
-	/* Tipografía */
+	/* Tipografia */
 	--font-main:
 		"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	--size-h1: 28px;
@@ -30,7 +29,7 @@
 	--spacing-md: 1.5rem;
 	--spacing-lg: 2rem;
 
-	/* Border Radius */
+	/* Radis */
 	--radius-md: 12px;
 	--radius-lg: 16px;
 
@@ -38,7 +37,7 @@
 	--transition-fast: all 0.15s ease-in-out;
 }
 
-/* Reset */
+/* Reset bàsic */
 * {
 	margin: 0;
 	padding: 0;
@@ -60,6 +59,7 @@ body {
 	overflow-x: hidden;
 }
 
+/* Fons ambiental */
 body::before {
 	content: "";
 	position: fixed;
@@ -92,17 +92,20 @@ body::after {
 	background: rgba(8, 16, 12, 0.35);
 }
 
+/* Contingut principal */
 .main-content {
 	position: relative;
 	z-index: 2;
 	backdrop-filter: blur(4px);
 	background-color: rgba(26, 47, 37, 0.15);
 	border-radius: 20px;
-	padding: var(--spacing-lg);
-	margin-top: var(--spacing-lg);
+	max-width: 1200px;
+	margin: var(--spacing-lg) auto;
+	padding: 0 var(--spacing-md);
+	min-height: 70vh;
 }
 
-/* ========== HEADER Y NAVBAR ==========*/
+/* ========== CAPÇALERA I NAVEGACIÓ ========== */
 .header {
 	background-color: var(--deep-forest);
 	border-bottom: 2px solid rgba(204, 255, 0, 0.1);
@@ -141,11 +144,6 @@ body::after {
 	padding-left: 0.5rem;
 }
 
-.navbar-menu {
-	margin: 0 auto;
-	justify-content: center;
-}
-
 .navbar-logo-img {
 	height: 100%;
 	width: auto;
@@ -162,8 +160,9 @@ body::after {
 	display: flex;
 	list-style: none;
 	gap: var(--spacing-lg);
-	margin: 0;
+	margin: 0 auto;
 	padding: 0;
+	justify-content: center;
 }
 
 .navbar-item {
@@ -176,8 +175,11 @@ body::after {
 	font-weight: 700;
 	padding: var(--spacing-xs) var(--spacing-sm);
 	border-radius: var(--radius-md);
-	transition: var(--transition-fast);
 	position: relative;
+	transition:
+		transform 0.25s ease-in-out,
+		color 0.25s ease-in-out,
+		background-color 0.25s ease-in-out;
 }
 
 .navbar-link:hover,
@@ -185,13 +187,6 @@ body::after {
 	color: var(--electric-lime);
 	background-color: rgba(55, 65, 81, 0.4);
 	transform: scale(1.08);
-}
-
-.navbar-link {
-	transition:
-		transform 0.25s ease-in-out,
-		color 0.25s ease-in-out,
-		background-color 0.25s ease-in-out;
 }
 
 .navbar-link.active::after {
@@ -206,14 +201,7 @@ body::after {
 	border-radius: 2px;
 }
 
-/* ========== MAIN CONTENT ==========*/
-.main-content {
-	max-width: 1200px;
-	margin: var(--spacing-lg) auto;
-	padding: 0 var(--spacing-md);
-	min-height: 70vh;
-}
-
+/* ========== HERO ========== */
 .hero {
 	text-align: center;
 	padding: var(--spacing-lg) 0;
@@ -231,7 +219,7 @@ body::after {
 	color: var(--grey-light);
 }
 
-/* ========== FOOTER ==========*/
+/* ========== PEU DE PÀGINA ========== */
 .footer {
 	background-color: var(--grey-dark);
 	border-top: 2px solid rgba(204, 255, 0, 0.1);
@@ -247,22 +235,7 @@ body::after {
 	color: var(--grey-light);
 }
 
-/* ========== RESPONSIVE ==========*/
-@media (max-width: 768px) {
-	.navbar-menu {
-		gap: var(--spacing-md);
-	}
-
-	.hero h1 {
-		font-size: 28px;
-	}
-
-	.hero p {
-		font-size: var(--size-body);
-	}
-}
-
-/* ========== DASHBOARD ==========*/
+/* ========== DASHBOARD ========== */
 .dashboard {
 	display: flex;
 	flex-direction: column;
@@ -318,7 +291,7 @@ body::after {
 	transform: translateY(-2px);
 }
 
-/* Barra de Progreso */
+/* ========== PROGRÉS ========== */
 .progress-card {
 	display: flex;
 	flex-direction: column;
@@ -361,18 +334,25 @@ body::after {
 	margin: 0;
 }
 
-/* Tarjeta de Reto */
+/* ========== REPTES ========== */
+.quests {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
 .challenge-card {
 	display: flex;
 	flex-direction: column;
-	gap: var(--spacing-md);
+	gap: 8px;
 }
 
 .challenge-header {
 	display: flex;
+	align-items: center;
 	justify-content: space-between;
-	align-items: flex-start;
-	margin-bottom: var(--spacing-sm);
+	gap: 12px;
+	margin-bottom: 2px;
 }
 
 .challenge-title {
@@ -380,21 +360,34 @@ body::after {
 	color: var(--electric-lime);
 	margin: 0;
 	font-weight: 700;
+	line-height: 1.2;
+	flex: 1;
 }
 
 .challenge-description {
 	color: var(--pure-white);
 	font-size: var(--size-body);
 	margin: 0;
+	line-height: 1.35;
 }
 
 .challenge-actions {
 	display: flex;
 	gap: var(--spacing-sm);
 	flex-wrap: wrap;
+	margin-top: 6px;
 }
 
-/* Badge */
+.challenge-actions .number-control-wrapper {
+	flex: 1 1 280px;
+	max-width: 420px;
+}
+
+.challenge-actions .js-register-action-btn {
+	flex: 0 0 auto;
+}
+
+/* Insígnies */
 .badge {
 	display: inline-block;
 	padding: 0.25rem 0.75rem;
@@ -403,19 +396,21 @@ body::after {
 	font-weight: 700;
 	background-color: rgba(55, 65, 81, 0.7);
 	color: var(--pure-white);
+	margin-left: 8px;
 }
 
 .badge-active {
 	background-color: var(--eco-mint);
 	color: var(--deep-forest);
+	margin-left: 8px;
 }
 
-/* Calculadora */
+/* ========== CALCULADORA ========== */
 .calculator-card {
 	display: flex;
 	flex-direction: column;
 	gap: var(--spacing-md);
-  overflow: hidden;
+	overflow: hidden;
 }
 
 .carbon-result {
@@ -445,7 +440,7 @@ body::after {
 	margin: var(--spacing-sm) 0 0;
 }
 
-/* Formularios */
+/* ========== FORMULARIS ========== */
 .form-group {
 	display: flex;
 	flex-direction: column;
@@ -486,70 +481,81 @@ body::after {
 	color: var(--grey-light);
 }
 
-/* Estils de la fletxa del camp numèric (consum energètic) */
-.number-field {
-	position: relative;
-}
-
-.number-control-wrapper {
-	position: relative;
-	display: block;
-	width: 100%;
-}
-
-.number-field .number-input {
-	width: 100%;
-	box-sizing: border-box;
-	padding-right: 1.8rem;
-	-moz-appearance: textfield;
-}
-
-.number-field .number-input::-webkit-outer-spin-button,
-.number-field .number-input::-webkit-inner-spin-button {
-	-webkit-appearance: none;
-	margin: 0;
-}
-
-.number-badges {
-	position: absolute;
-	right: 0.12rem;
-	top: 50%;
-	transform: translateY(-50%);
-	display: flex;
-	flex-direction: column;
-	gap: 0.005rem;
-	background: rgba(0, 0, 0, 0.14);
-	border-radius: 2px;
-	padding: 0.005rem;
-}
-
-.number-btn {
-	width: 1.8rem !important;
-	height: 1.3rem !important;
-	display: flex !important;
-	align-items: center;
-	justify-content: center;
-	padding: 0 !important;
-	line-height: 1 !important;
-	font-size: 0.32rem !important;
-	border-radius: 1px;
-	border: none;
-}
-
-.number-btn:hover {
-	background-color: rgba(204, 255, 0, 0.28) !important;
-}
-
-.number-btn:active {
-	transform: scale(0.95) !important;
-}
-
 .form-help {
 	font-size: var(--size-micro);
 	color: var(--grey-light);
 }
 
-/* Botones */
+/* ========== CONTROL NUMÈRIC REUTILITZABLE ========== */
+/* Contenidor del camp amb les fletxes laterals */
+.number-field {
+	position: relative;
+}
+
+/* Estructura principal del control */
+.number-control-wrapper {
+	display: flex;
+	align-items: stretch;
+	gap: 12px;
+	width: 100%;
+}
+
+/* L'input ocupa tot l'espai disponible */
+.number-control-wrapper .number-input,
+.number-control-wrapper .form-input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* Chrome, Safari, Edge (WebKit/Blink) */
+.number-input::-webkit-outer-spin-button,
+.number-input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+/* Firefox */
+.number-input {
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+
+/* Columna de fletxes */
+.number-badges {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 8px;
+	flex: 0 0 auto;
+}
+
+/* Botons de sumar i restar */
+.number-btn {
+	width: 26px;
+	min-width: 26px;
+	height: 26px;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
+	padding: 0;
+	font-size: 10px;
+	line-height: 1;
+
+	border-radius: 8px;
+	cursor: pointer;
+
+	/* Visual més lleuger */
+	background-color: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(204, 255, 0, 0.25);
+}
+
+.number-btn:active {
+	transform: scale(0.96);
+}
+
+/* ========== BOTONS ========== */
 .btn {
 	padding: 0.75rem 1.5rem;
 	border: none;
@@ -593,7 +599,7 @@ body::after {
 	color: var(--electric-lime);
 }
 
-/* Acceso Rápido */
+/* ========== ACCÉS RÀPID ========== */
 .quick-access {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -632,7 +638,7 @@ body::after {
 	margin: 0;
 }
 
-/* Utilidades */
+/* ========== UTILITATS ========== */
 .mt-3 {
 	margin-top: 1.5rem;
 }
@@ -641,8 +647,39 @@ body::after {
 	margin-top: 2rem;
 }
 
-.quests {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+	.navbar-menu {
+		gap: var(--spacing-md);
+	}
+
+	.hero h1 {
+		font-size: 28px;
+	}
+
+	.hero p {
+		font-size: var(--size-body);
+	}
+}
+
+@media (max-width: 640px) {
+	.number-control-wrapper {
+		gap: 10px;
+	}
+
+	.number-btn {
+		width: 40px;
+		min-width: 40px;
+		height: 40px;
+	}
+
+	.challenge-actions {
+		align-items: stretch;
+	}
+
+	.challenge-actions .number-control-wrapper,
+	.challenge-actions .js-register-action-btn {
+		width: 100%;
+		max-width: none;
+	}
 }

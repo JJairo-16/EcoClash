@@ -12,6 +12,7 @@ import {
     startUserMission,
     addProgressToUserMission
 } from "./lib/mission-progress-lib.js";
+import { setupNumberControlsInContainer } from "./components/number-control.js";
 
 const MISSION_STATES = {
     NOT_STARTED: "per_iniciar",
@@ -85,6 +86,7 @@ async function buildQuests() {
             ${questsHtml || "<p>No hi ha missions disponibles</p>"}
         `;
 
+        setupNumberControlsInContainer(dom.questsContainer);
         bindMissionEvents();
     } catch (error) {
         console.error("Error en carregar les missions:", error);
@@ -211,6 +213,7 @@ function createActiveQuestCard({
                 data-mission-id="${safeMissionId}"
                 data-mission-state="${state}"
                 data-allow-decimals="${allowDecimals}"
+                data-unit="${safeUnit}"
             >
                 <div class="challenge-header">
                     <h3 class="challenge-title">${safeName}</h3>
@@ -252,13 +255,30 @@ function getMissionActionsHtml(state, unit, allowDecimals = false) {
 
         return `
             <div class="challenge-actions">
-                <input
-                    type="number"
-                    class="form-input js-mission-progress-input"
-                    placeholder="Introdueix ${unit || "valor"}"
-                    min="${min}"
-                    step="${step}"
-                >
+                <div class="number-control-wrapper" data-number-control>
+                    <input
+                        type="number"
+                        class="form-input number-input js-mission-progress-input"
+                        data-number-input
+                        placeholder="Introdueix ${unit || "valor"}"
+                        min="${min}"
+                        step="${step}"
+                    >
+                    <div class="number-badges">
+                        <button
+                            class="btn btn-secondary number-btn js-mission-progress-up"
+                            data-number-increment
+                            type="button"
+                            aria-label="Augmentar valor"
+                        >▲</button>
+                        <button
+                            class="btn btn-secondary number-btn js-mission-progress-down"
+                            data-number-decrement
+                            type="button"
+                            aria-label="Disminuir valor"
+                        >▼</button>
+                    </div>
+                </div>
                 <button
                     class="btn btn-primary js-register-action-btn"
                     type="button"
@@ -302,6 +322,7 @@ async function handleStartMission(card) {
 
     const missionId = card.dataset.missionId;
     const allowDecimals = card.dataset.allowDecimals === "true";
+    const unit = card.dataset.unit || "";
 
     card.dataset.missionState = MISSION_STATES.IN_PROGRESS;
 
@@ -317,9 +338,10 @@ async function handleStartMission(card) {
     if (actions) {
         actions.outerHTML = getMissionActionsHtml(
             MISSION_STATES.IN_PROGRESS,
-            "",
+            unit,
             allowDecimals
         );
+        setupNumberControlsInContainer(card);
     }
 
     console.log("Misión iniciada:", missionId);
@@ -432,6 +454,7 @@ function updateMissionCardProgress(card, {
                 "beforeend",
                 getMissionActionsHtml(MISSION_STATES.IN_PROGRESS, unit, allowDecimals)
             );
+            setupNumberControlsInContainer(card);
         }
     }
 }

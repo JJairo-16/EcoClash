@@ -9,27 +9,21 @@
   <meta name="theme-color" content="#1A2F25">
   <title>EcoClash - Reptes Sostenibles</title>
 
-  <!-- Google Fonts - Optimitzat -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 
-  <!-- Estils -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body>
-
-  <!-- Header amb Navegació Principal -->
   <header class="header">
     <nav class="navbar">
       <div class="navbar-container">
-        <!-- Logo -->
         <a href="#" class="navbar-logo">
           <img src="img/EcoClash.webp" alt="EcoClash Logo" class="navbar-logo-img">
         </a>
 
-        <!-- Menú de Navegació -->
         <ul class="navbar-menu">
           <li class="navbar-item">
             <a href="#" class="navbar-link active">Tauler</a>
@@ -51,19 +45,13 @@
     </nav>
   </header>
 
-  <!-- Contenidor Principal -->
   <main class="main-content">
-
-    <!-- DASHBOARD SECTION -->
     <section class="dashboard">
-
-      <!-- Benvinguda -->
       <div class="welcome-card card">
         <h1>Benvingut a EcoClash!</h1>
         <p>Participa en reptes sostenibles i competeix amb amics per guanyar el podi</p>
       </div>
 
-      <!-- El teu Progrés -->
       <section class="dashboard-section">
         <h2 class="section-title">El teu progrés</h2>
         <div class="progress-card card">
@@ -78,25 +66,23 @@
         </div>
       </section>
 
-      <!-- Repte Diari -->
       <div class="quests">
         <h2 class="section-title">Repte diari actiu</h2>
       </div>
 
-      <!-- Calculadora de Petjada -->
       <section class="dashboard-section">
         <h2 class="section-title">Calculadora de Petjada Express</h2>
         <div class="calculator-card card">
           <form class="form-group">
             <div class="form-row number-field">
               <label for="transport-km" class="form-label">Km en transport avui:</label>
-              <div class="number-control-wrapper">
-                <input type="number" id="transport-km" class="form-input number-input" placeholder="0 km" min="0"
-                  step="0.1">
+              <div class="number-control-wrapper" data-number-control>
+                <input type="number" id="transport-km" class="form-input number-input" data-number-input placeholder="0 km"
+                  min="0" step="0.1">
                 <div class="number-badges">
-                  <button type="button" id="transport-up" class="btn btn-secondary number-btn"
+                  <button type="button" id="transport-up" class="btn btn-secondary number-btn" data-number-increment
                     aria-label="Augmentar km">▲</button>
-                  <button type="button" id="transport-down" class="btn btn-secondary number-btn"
+                  <button type="button" id="transport-down" class="btn btn-secondary number-btn" data-number-decrement
                     aria-label="Disminuir km">▼</button>
                 </div>
               </div>
@@ -105,13 +91,13 @@
 
             <div class="form-row number-field">
               <label for="energy-consumption" class="form-label">Consum energètic (kWh):</label>
-              <div class="number-control-wrapper">
-                <input type="number" id="energy-consumption" class="form-input number-input" placeholder="0 kWh" min="0"
-                  step="0.1">
+              <div class="number-control-wrapper" data-number-control>
+                <input type="number" id="energy-consumption" class="form-input number-input" data-number-input placeholder="0 kWh"
+                  min="0" step="0.1">
                 <div class="number-badges">
-                  <button type="button" id="energy-up" class="btn btn-secondary number-btn"
+                  <button type="button" id="energy-up" class="btn btn-secondary number-btn" data-number-increment
                     aria-label="Augmentar consum">▲</button>
-                  <button type="button" id="energy-down" class="btn btn-secondary number-btn"
+                  <button type="button" id="energy-down" class="btn btn-secondary number-btn" data-number-decrement
                     aria-label="Disminuir consum">▼</button>
                 </div>
               </div>
@@ -127,10 +113,9 @@
           </div>
         </div>
       </section>
-
+    </section>
   </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="footer-content">
       <p>&copy; 2026 Clash Labs - Contacte: contact@clashlabs.cat</p>
