@@ -91,8 +91,8 @@ function bindHoldBehavior(button, onStep) {
         event.preventDefault();
         onStep();
 
-        holdTimeoutId = window.setTimeout(() => {
-            holdIntervalId = window.setInterval(onStep, REPEAT_DELAY);
+        holdTimeoutId = globalThis.setTimeout(() => {
+            holdIntervalId = globalThis.setInterval(onStep, REPEAT_DELAY);
         }, INITIAL_DELAY);
     });
 

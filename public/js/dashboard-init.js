@@ -1,4 +1,6 @@
 import { setupNumberControl } from './components/number-control.js';
+import { auth } from './config.js';
+import { signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 const CALCULATOR_FACTORS = {
     transportKgCo2PerKm: 0.21,
@@ -69,3 +71,7 @@ function bindCalculatorForm() {
 
 setupCalculatorNumberControls();
 bindCalculatorForm();
+
+document.getElementById('log-out').addEventListener('click', async (event) => {
+    await signOut(auth);
+});
