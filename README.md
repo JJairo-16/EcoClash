@@ -79,6 +79,15 @@ Al dashboard s’ha implementat la lògica de backend que permet mostrar informa
 - **Sistema de nivells** amb una barra d’experiència  
 - Visualització dels **punts d’EXP necessaris** per pujar de nivell  
 - Representació dinàmica de l’estat de l’usuari a la interfície  
+- **Botó per tancar sessió** accessible des del dashboard  
+
+### Autenticació
+
+El sistema d’autenticació inclou:
+
+- Funció de **registre d’usuaris**  
+- **Pàgina independent** per registrar-se i iniciar sessió  
+- Secció d’**ajuda** per a l’usuari durant el procés  
 
 ### Missions
 
@@ -88,6 +97,7 @@ El sistema de missions permet:
 - Veure una **barra de progrés** per a cada missió  
 - Opció de **començar missions**  
 - Rebre **experiència automàticament** en completar-les  
+- Visualitzar un **icona de missió completada**  
 
 ### Petjada Ecològica
 
