@@ -12,7 +12,7 @@ function go(path) {
     globalThis.location.href = target.href;
 }
 
-export async function redirect(url = LOGIN, invert = false) {
+export async function redirect(url = LOGIN) {
     if (auth.currentUser) {
         go(url);
     } else {
