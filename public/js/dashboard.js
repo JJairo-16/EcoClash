@@ -4,8 +4,6 @@ import { auth } from "./config.js";
 import { redirect } from "./redirector.js";
 
 import { getUserData } from "./lib/user-data-lib.js";
-import { selectById } from "./lib/firestore.js";
-
 import { updateDailyMissionsIfNeeded } from "./lib/random-quest-selector.js";
 import {
     getUserDailyMissions,
@@ -72,9 +70,7 @@ async function buildQuests() {
             return;
         }
 
-        const cardConfigs = await Promise.all(
-            missions.map((mission) => mapMissionToCardConfig(mission))
-        );
+        const cardConfigs = missions.map((mission) => mapMissionToCardConfig(mission));
 
         const questsHtml = cardConfigs
             .filter(Boolean)
@@ -97,7 +93,7 @@ async function buildQuests() {
     }
 }
 
-async function mapMissionToCardConfig(mission) {
+function mapMissionToCardConfig(mission) {
     if (!mission) return null;
 
     const total = Number(mission.amountTarget) || 1;
@@ -117,23 +113,15 @@ async function mapMissionToCardConfig(mission) {
         state = MISSION_STATES.IN_PROGRESS;
     }
 
-    let quest = null;
-
-    try {
-        quest = await selectById("quests", mission.missionId);
-    } catch (error) {
-        console.error(`Error obtenint la quest ${mission.missionId}:`, error);
-    }
-
     return {
         missionId: mission.missionId || "",
         state,
         percentage,
         current,
         total,
-        unit: quest?.unity || "",
+        unit: mission.unity || "",
         name: mission.title || "Missió",
-        description: quest?.description || "",
+        description: mission.description || "",
         allowDecimals: Boolean(mission.allowDecimals)
     };
 }

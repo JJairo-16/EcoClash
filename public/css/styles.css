@@ -1,5 +1,5 @@
 /* ========================================
-   ECOCLASH - ESTILS BASE
+   ECOCLASH - ESTILS GLOBALS
    Paleta "Action-Green" - Mode fosc
 ======================================== */
 
@@ -235,48 +235,7 @@ body::after {
 	color: var(--grey-light);
 }
 
-/* ========== DASHBOARD ========== */
-.dashboard {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-lg);
-}
-
-.welcome-card {
-	background: linear-gradient(
-		135deg,
-		rgba(76, 222, 128, 0.15) 0%,
-		rgba(204, 255, 0, 0.08) 100%
-	);
-	border: 1px solid rgba(204, 255, 0, 0.2);
-	padding: var(--spacing-lg);
-	text-align: center;
-}
-
-.welcome-card h1 {
-	font-size: 32px;
-	color: var(--electric-lime);
-	margin-bottom: var(--spacing-sm);
-}
-
-.welcome-card p {
-	color: var(--grey-light);
-	font-size: var(--size-body);
-}
-
-.dashboard-section {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-md);
-}
-
-.section-title {
-	font-size: var(--size-h3);
-	font-weight: 700;
-	color: var(--electric-lime);
-	margin: 0;
-}
-
+/* ========== COMPONENTS REUTILITZABLES ========== */
 .card {
 	background-color: rgba(55, 65, 81, 0.5);
 	border: 1px solid rgba(204, 255, 0, 0.1);
@@ -289,102 +248,6 @@ body::after {
 	border-color: rgba(204, 255, 0, 0.25);
 	background-color: rgba(55, 65, 81, 0.65);
 	transform: translateY(-2px);
-}
-
-/* ========== PROGRÉS ========== */
-.progress-card {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-sm);
-}
-
-.progress-header {
-	display: flex;
-	justify-content: space-between;
-	font-weight: 700;
-	font-size: var(--size-body);
-}
-
-.progress-label {
-	color: var(--electric-lime);
-}
-
-.progress-percentage {
-	color: var(--eco-mint);
-}
-
-.progress-bar {
-	width: 100%;
-	height: 10px;
-	background-color: rgba(31, 41, 55, 0.6);
-	border-radius: var(--radius-md);
-	overflow: hidden;
-}
-
-.progress-fill {
-	height: 100%;
-	background: linear-gradient(90deg, var(--eco-mint), var(--electric-lime));
-	border-radius: var(--radius-md);
-	transition: width 0.5s ease-in-out;
-}
-
-.progress-text {
-	font-size: var(--size-micro);
-	color: var(--grey-light);
-	margin: 0;
-}
-
-/* ========== REPTES ========== */
-.quests {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
-.challenge-card {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.challenge-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	margin-bottom: 2px;
-}
-
-.challenge-title {
-	font-size: var(--size-h3);
-	color: var(--electric-lime);
-	margin: 0;
-	font-weight: 700;
-	line-height: 1.2;
-	flex: 1;
-}
-
-.challenge-description {
-	color: var(--pure-white);
-	font-size: var(--size-body);
-	margin: 0;
-	line-height: 1.35;
-}
-
-.challenge-actions {
-	display: flex;
-	gap: var(--spacing-sm);
-	flex-wrap: wrap;
-	margin-top: 6px;
-}
-
-.challenge-actions .number-control-wrapper {
-	flex: 1 1 280px;
-	max-width: 420px;
-}
-
-.challenge-actions .js-register-action-btn {
-	flex: 0 0 auto;
 }
 
 /* Insígnies */
@@ -403,41 +266,6 @@ body::after {
 	background-color: var(--eco-mint);
 	color: var(--deep-forest);
 	margin-left: 8px;
-}
-
-/* ========== CALCULADORA ========== */
-.calculator-card {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-md);
-	overflow: hidden;
-}
-
-.carbon-result {
-	background-color: rgba(74, 222, 128, 0.1);
-	border: 1px solid rgba(74, 222, 128, 0.3);
-	border-radius: var(--radius-lg);
-	padding: var(--spacing-md);
-	text-align: center;
-	animation: slideDown 0.3s ease-in-out;
-}
-
-@keyframes slideDown {
-	from {
-		opacity: 0;
-		transform: translateY(-10px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-.carbon-value {
-	font-size: 28px;
-	font-weight: 700;
-	color: var(--electric-lime);
-	margin: var(--spacing-sm) 0 0;
 }
 
 /* ========== FORMULARIS ========== */
@@ -671,15 +499,5 @@ body::after {
 		width: 40px;
 		min-width: 40px;
 		height: 40px;
-	}
-
-	.challenge-actions {
-		align-items: stretch;
-	}
-
-	.challenge-actions .number-control-wrapper,
-	.challenge-actions .js-register-action-btn {
-		width: 100%;
-		max-width: none;
 	}
 }

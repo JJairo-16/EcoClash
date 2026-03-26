@@ -1,3 +1,9 @@
+import { db } from "../config.js";
+import {
+  doc,
+  runTransaction
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
 import { selectById, setById, selectWhere } from "./firestore.js";
 import {
   getCachedDailyMissions,
@@ -9,6 +15,14 @@ const USER_DATA_COLLECTION = "userData";
 const USER_DAILY_MISSIONS_COLLECTION = "userDailyMissions";
 const QUESTS_COLLECTION = "quests";
 const DAILY_MISSIONS_COUNT = 3;
+
+function getUserDataRef(uid) {
+  return doc(db, USER_DATA_COLLECTION, uid);
+}
+
+function getUserDailyMissionsRef(uid) {
+  return doc(db, USER_DAILY_MISSIONS_COLLECTION, uid);
+}
 
 /**
  * Genera un valor aleatori amb distribució triangular (més pes al centre).
@@ -248,6 +262,8 @@ function createDailyMissionFromQuest(quest) {
   return {
     missionId: questId,
     title: questTitle,
+    description: typeof quest.description === "string" ? quest.description : "",
+    unity: typeof quest.unity === "string" ? quest.unity : "",
     amountTarget: getQuestTarget(
       quest.minAmount,
       quest.maxAmount,
@@ -360,31 +376,50 @@ export async function updateDailyMissionsIfNeeded(uid) {
   await assertUserExists(normalizedUid);
 
   const today = getStartOfToday();
-  const dailyMissionsDoc = await getUserDailyMissionsDoc(normalizedUid);
-  const currentDailyMissionsDate = normalizeDate(
-    dailyMissionsDoc?.dailyMissionsDate
-  );
+  const dailyRef = getUserDailyMissionsRef(normalizedUid);
 
-  if (isSameDay(currentDailyMissionsDate, today)) {
-    const missions = Array.isArray(dailyMissionsDoc?.missions)
-      ? dailyMissionsDoc.missions
-      : [];
+  const existing = await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(dailyRef);
+    const data = snap.exists() ? snap.data() : null;
+    const currentDate = normalizeDate(data?.dailyMissionsDate);
 
-    setCachedDailyMissions(normalizedUid, missions);
-    return missions;
-  }
+    if (isSameDay(currentDate, today)) {
+      return Array.isArray(data?.missions) ? data.missions : [];
+    }
 
-  const newDailyMissions = await getRandomDailyMissionsFromTable(
-    DAILY_MISSIONS_COUNT
-  );
-
-  await saveUserDailyMissionsDoc(normalizedUid, {
-    dailyMissionsDate: today,
-    missions: newDailyMissions
+    return null;
   });
 
-  setCachedDailyMissions(normalizedUid, newDailyMissions);
-  return newDailyMissions;
+  if (existing) {
+    setCachedDailyMissions(normalizedUid, existing);
+    return existing;
+  }
+
+  const generated = await getRandomDailyMissionsFromTable(DAILY_MISSIONS_COUNT);
+
+  const finalMissions = await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(dailyRef);
+    const data = snap.exists() ? snap.data() : null;
+    const currentDate = normalizeDate(data?.dailyMissionsDate);
+
+    if (isSameDay(currentDate, today)) {
+      return Array.isArray(data?.missions) ? data.missions : [];
+    }
+
+    transaction.set(
+      dailyRef,
+      {
+        dailyMissionsDate: today,
+        missions: generated
+      },
+      { merge: false }
+    );
+
+    return generated;
+  });
+
+  setCachedDailyMissions(normalizedUid, finalMissions);
+  return finalMissions;
 }
 
 /**

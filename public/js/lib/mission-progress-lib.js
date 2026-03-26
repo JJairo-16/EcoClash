@@ -1,9 +1,19 @@
+import { db } from "../config.js";
+import {
+  doc,
+  runTransaction
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
 import { selectById, setById } from "./firestore.js";
 import { addUserExperience } from "./user-data-lib.js";
 import { setCachedDailyMissions } from "./cache/DailyMissionsCache.js";
 
 const USER_DATA_COLLECTION = "userData";
 const USER_DAILY_MISSIONS_COLLECTION = "userDailyMissions";
+
+function getUserDailyMissionsRef(uid) {
+  return doc(db, USER_DAILY_MISSIONS_COLLECTION, uid);
+}
 
 /**
  * Retorna la data actual amb els segons i mil·lisegons posats a 0,
@@ -310,39 +320,62 @@ export async function startUserMission(uid, missionId) {
   const normalizedUid = validateUid(uid);
   const normalizedMissionId = validateMissionId(missionId);
 
-  const missionStore = await getValidatedMissionStore(normalizedUid);
-  const missionIndex = findMissionIndex(missionStore.missions, normalizedMissionId);
+  await assertUserExists(normalizedUid);
 
-  if (missionIndex === -1) {
-    throw new Error("La missió indicada no existeix per a aquest usuari.");
-  }
+  const missionRef = getUserDailyMissionsRef(normalizedUid);
 
-  const updatedDailyMissions = [...missionStore.missions];
-  const currentMission = cloneMission(updatedDailyMissions[missionIndex]);
+  const updatedMission = await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(missionRef);
+    const missionStore = snap.exists() ? snap.data() : {};
 
-  if (currentMission.completed) {
-    throw new Error(
-      "La missió ja està completada i no es pot tornar a iniciar."
+    const missions = validateUserMissionsArray(missionStore?.missions ?? []);
+    const missionIndex = findMissionIndex(missions, normalizedMissionId);
+
+    if (missionIndex === -1) {
+      throw new Error("La missió indicada no existeix per a aquest usuari.");
+    }
+
+    const updatedDailyMissions = [...missions];
+    const currentMission = cloneMission(updatedDailyMissions[missionIndex]);
+
+    if (currentMission.completed) {
+      throw new Error(
+        "La missió ja està completada i no es pot tornar a iniciar."
+      );
+    }
+
+    if (currentMission.active) {
+      return currentMission;
+    }
+
+    currentMission.active = true;
+    currentMission.startTimestamp =
+      currentMission.startTimestamp ?? getCurrentHourMinuteDate();
+    currentMission.endTimestamp = null;
+
+    updatedDailyMissions[missionIndex] = currentMission;
+
+    transaction.set(
+      missionRef,
+      {
+        dailyMissionsDate: missionStore?.dailyMissionsDate ?? null,
+        missions: updatedDailyMissions
+      },
+      { merge: false }
     );
-  }
 
-  if (currentMission.active) {
     return currentMission;
-  }
-
-  currentMission.active = true;
-  currentMission.startTimestamp =
-    currentMission.startTimestamp ?? getCurrentHourMinuteDate();
-  currentMission.endTimestamp = null;
-
-  updatedDailyMissions[missionIndex] = currentMission;
-
-  await saveUserDailyMissionsDocument(normalizedUid, {
-    dailyMissionsDate: missionStore.dailyMissionsDate,
-    missions: updatedDailyMissions
   });
 
-  return currentMission;
+  const cachedMissions = getCachedDailyMissions(normalizedUid);
+  if (Array.isArray(cachedMissions)) {
+    const nextCachedMissions = cachedMissions.map((mission) =>
+      mission.missionId === normalizedMissionId ? { ...updatedMission } : mission
+    );
+    setCachedDailyMissions(normalizedUid, nextCachedMissions);
+  }
+
+  return updatedMission;
 }
 
 /**
@@ -357,78 +390,105 @@ export async function addProgressToUserMission(uid, missionId, amount) {
   const normalizedUid = validateUid(uid);
   const normalizedMissionId = validateMissionId(missionId);
 
-  const missionStore = await getValidatedMissionStore(normalizedUid);
-  const missionIndex = findMissionIndex(missionStore.missions, normalizedMissionId);
+  await assertUserExists(normalizedUid);
 
-  if (missionIndex === -1) {
-    throw new Error("La missió indicada no existeix per a aquest usuari.");
-  }
+  const missionRef = getUserDailyMissionsRef(normalizedUid);
 
-  const updatedDailyMissions = [...missionStore.missions];
-  const currentMission = cloneMission(updatedDailyMissions[missionIndex]);
+  const result = await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(missionRef);
+    const missionStore = snap.exists() ? snap.data() : {};
 
-  if (!currentMission.active) {
-    throw new Error("No es pot progressar una missió que no està activa.");
-  }
+    const missions = validateUserMissionsArray(missionStore?.missions ?? []);
+    const missionIndex = findMissionIndex(missions, normalizedMissionId);
 
-  if (currentMission.completed) {
-    throw new Error("La missió ja està completada.");
-  }
+    if (missionIndex === -1) {
+      throw new Error("La missió indicada no existeix per a aquest usuari.");
+    }
 
-  const allowDecimals = getMissionAllowDecimals(currentMission);
-  const normalizedAmount = normalizeProgressInputByMissionRules(
-    amount,
-    allowDecimals
-  );
+    const updatedDailyMissions = [...missions];
+    const currentMission = cloneMission(updatedDailyMissions[missionIndex]);
 
-  const normalizedCurrentProgress = normalizeMissionNumber(
-    currentMission.currentProgress,
-    allowDecimals
-  );
+    if (!currentMission.active) {
+      throw new Error("No es pot progressar una missió que no està activa.");
+    }
 
-  const normalizedAmountTarget = normalizeMissionNumber(
-    currentMission.amountTarget,
-    allowDecimals
-  );
+    if (currentMission.completed) {
+      throw new Error("La missió ja està completada.");
+    }
 
-  const rawNextProgress = normalizedCurrentProgress + normalizedAmount;
-  const normalizedNextProgress = normalizeMissionNumber(
-    rawNextProgress,
-    allowDecimals
-  );
+    const allowDecimals = getMissionAllowDecimals(currentMission);
+    const normalizedAmount = normalizeProgressInputByMissionRules(
+      amount,
+      allowDecimals
+    );
 
-  const completed = normalizedNextProgress >= normalizedAmountTarget;
+    const normalizedCurrentProgress = normalizeMissionNumber(
+      currentMission.currentProgress,
+      allowDecimals
+    );
 
-  currentMission.currentProgress = completed
-    ? normalizedAmountTarget
-    : normalizedNextProgress;
+    const normalizedAmountTarget = normalizeMissionNumber(
+      currentMission.amountTarget,
+      allowDecimals
+    );
 
-  currentMission.completed = completed;
+    const rawNextProgress = normalizedCurrentProgress + normalizedAmount;
+    const normalizedNextProgress = normalizeMissionNumber(
+      rawNextProgress,
+      allowDecimals
+    );
 
-  if (!currentMission.startTimestamp) {
-    currentMission.startTimestamp = getCurrentHourMinuteDate();
-  }
+    const completedNow = normalizedNextProgress >= normalizedAmountTarget;
 
-  if (completed) {
-    currentMission.endTimestamp = getCurrentHourMinuteDate();
+    currentMission.currentProgress = completedNow
+      ? normalizedAmountTarget
+      : normalizedNextProgress;
+
+    currentMission.completed = completedNow;
+
+    if (!currentMission.startTimestamp) {
+      currentMission.startTimestamp = getCurrentHourMinuteDate();
+    }
+
+    if (completedNow) {
+      currentMission.endTimestamp = getCurrentHourMinuteDate();
+    }
+
+    updatedDailyMissions[missionIndex] = currentMission;
+
+    transaction.set(
+      missionRef,
+      {
+        dailyMissionsDate: missionStore?.dailyMissionsDate ?? null,
+        missions: updatedDailyMissions
+      },
+      { merge: false }
+    );
 
     const weight =
       Number.isFinite(currentMission.puntuationWeight)
         ? currentMission.puntuationWeight
         : 1;
 
-    const xp = Math.max(0, Math.floor(normalizedAmountTarget * weight));
-    await addUserExperience(normalizedUid, xp);
-  }
+    const xp = completedNow
+      ? Math.max(0, Math.floor(normalizedAmountTarget * weight))
+      : 0;
 
-  updatedDailyMissions[missionIndex] = currentMission;
-
-  await saveUserDailyMissionsDocument(normalizedUid, {
-    dailyMissionsDate: missionStore.dailyMissionsDate,
-    missions: updatedDailyMissions
+    return {
+      mission: currentMission,
+      missions: updatedDailyMissions,
+      completedNow,
+      xp
+    };
   });
 
-  return currentMission;
+  setCachedDailyMissions(normalizedUid, result.missions);
+
+  if (result.completedNow && result.xp > 0) {
+    await addUserExperience(normalizedUid, result.xp);
+  }
+
+  return result.mission;
 }
 
 /**
