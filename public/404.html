@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="EcoClash - Pàgina no trobada">
+  <meta name="theme-color" content="#1A2F25">
+  <title>404 - Pàgina no trobada | EcoClash</title>
+  
+  <!-- Google Fonts - Optimizat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Contenedor Principal -->
+  <main class="main-content">
+    
+    <!-- ERROR 404 SECTION -->
+    <section class="error-section">
+      
+      <!-- Error Container -->
+      <div class="error-container">
+        
+        <!-- Animación Error -->
+        <div class="error-animation">
+          <div class="error-code">404</div>
+          <div class="error-icon">🌍</div>
+        </div>
+
+        <!-- Contenido Error -->
+        <div class="error-content">
+          <h1 class="error-title">Oops! Pàgina no trobada</h1>
+          <p class="error-description">
+            Sembla que has entrat a una zona que no existeix a EcoClash. 
+            La pàgina que buscas podria haver desaparegut o l'adreça pot ser incorrecta.
+          </p>
+
+          <!-- Illustración Ecológica -->
+          <div class="error-illustration">
+            <img src="img/EcoClash.webp" alt="EcoClash Logo" class="error-logo">
+            <div class="plant-text">Aquesta zona està buida...</div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="error-actions">
+            <a href="dashboard.html" class="btn btn-primary">
+              Tornar al Dashboard
+            </a>
+            <button onclick="history.back()" class="btn btn-secondary">
+              Enrere
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <style>
+    /* ========== ERROR 404 STYLES ==========*/
+    .error-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      padding: var(--spacing-lg) 0;
+    }
+
+    .error-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-lg);
+    }
+
+    /* Animación del código de error */
+    .error-animation {
+      position: relative;
+      width: 200px;
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .error-code {
+      font-size: 120px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--electric-lime), var(--eco-mint));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      opacity: 0.3;
+      animation: float 3s ease-in-out infinite;
+      letter-spacing: -5px;
+      margin: 0;
+    }
+
+    .error-icon {
+      font-size: 80px;
+      animation: spin 8s linear infinite;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-20px);
+      }
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Contenido del error */
+    .error-content {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .error-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--electric-lime);
+      margin: 0;
+    }
+
+    .error-description {
+      font-size: var(--size-body);
+      color: var(--grey-light);
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* Ilustración */
+    .error-illustration {
+      background-color: rgba(204, 255, 0, 0.08);
+      border: 1px solid rgba(204, 255, 0, 0.15);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      margin: var(--spacing-md) 0;
+      animation: pulse 2s ease-in-out infinite;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .error-logo {
+      width: 200px;
+      height: auto;
+      display: block;
+      margin: 0 auto var(--spacing-sm) auto;
+      animation: float 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 10px rgba(204, 255, 0, 0.3));
+    }
+
+    .plant-text {
+      color: var(--grey-light);
+      font-size: var(--size-micro);
+      font-style: italic;
+    }
+
+    @keyframes wiggle {
+      0%, 100% {
+        transform: rotate(0deg);
+      }
+      25% {
+        transform: rotate(-2deg);
+      }
+      75% {
+        transform: rotate(2deg);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.5;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    /* Botones de acción */
+    .error-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: var(--spacing-lg);
+    }
+
+    .error-actions .btn {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .error-section {
+        min-height: 50vh;
+        padding: var(--spacing-md) 0;
+      }
+
+      .error-animation {
+        width: 150px;
+        height: auto;
+        margin-bottom: var(--spacing-md);
+      }
+
+      .error-code {
+        font-size: 80px;
+      }
+
+      .error-icon {
+        font-size: 60px;
+      }
+
+      .error-title {
+        font-size: 24px;
+      }
+
+      .error-illustration {
+        padding: var(--spacing-md);
+      }
+
+      .error-logo {
+        width: 160px;
+      }
+
+      .error-actions {
+        flex-direction: column;
+      }
+
+      .error-actions .btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .error-animation {
+        width: 120px;
+        height: auto;
+      }
+
+      .error-code {
+        font-size: 60px;
+      }
+
+      .error-icon {
+        font-size: 40px;
+      }
+
+      .error-title {
+        font-size: 20px;
+      }
+
+      .error-description {
+        font-size: 0.9rem;
+      }
+
+      .error-logo {
+        width: 140px;
+      }
+    }
+  </style>
+
+</body>
+</html>
