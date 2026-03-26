@@ -25,6 +25,11 @@ const dom = {
     questsContainer: document.querySelector(".quests")
 };
 
+const BADGES = {
+    active: `<span class="badge badge-active">Activa</span>`,
+    completed: `<span class="badge badge-completed">Completada</span>`
+};
+
 let savedUid = null;
 let missionEventsBound = false;
 
@@ -221,11 +226,11 @@ function createActiveQuestCard({
 
 function getBadge(state) {
     if (state === MISSION_STATES.IN_PROGRESS) {
-        return `<span class="badge badge-active">Activa</span>`;
+        return BADGES.active;
     }
 
     if (state === MISSION_STATES.COMPLETED) {
-        return `<span class="badge badge-completed">Completada</span>`;
+        return BADGES.completed;
     }
 
     return "";
@@ -349,7 +354,7 @@ async function handleStartMission(card) {
 
     header?.insertAdjacentHTML(
         "beforeend",
-        `<span class="badge badge-active">Activa</span>`
+        BADGES.active
     );
 
     const actions = card.querySelector(".challenge-actions");
@@ -494,7 +499,7 @@ function updateMissionCardProgress(card, {
 
         header?.insertAdjacentHTML(
             "beforeend",
-            `<span class="badge badge-completed">Completada</span>`
+            BADGES.completed
         );
 
         if (actions) {
@@ -512,7 +517,7 @@ function updateMissionCardProgress(card, {
 
         header.insertAdjacentHTML(
             "beforeend",
-            `<span class="badge badge-active">Activa</span>`
+            BADGES.active
         );
     }
 
