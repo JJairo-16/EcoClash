@@ -20,7 +20,8 @@
           <span class="navbar-link active" style="cursor:default;">Inici de sessió</span>
         </li>
         <li class="navbar-item">
-          <button class="btn btn-secondary">Ajuda</button>
+          <!-- 🔗 BOTÓN AYUDA FUNCIONAL -->
+          <a href="help.html" class="btn btn-secondary">Ajuda</a>
         </li>
       </ul>
     </div>
@@ -137,7 +138,6 @@ document.getElementById("register-form").onsubmit = e=>{
     return;
   }
 
-  // 👉 VALIDACIÓN REGEX
   if(!validarPassword(pass)){
     msg("reg-msg",
       "La contrasenya ha de tenir mínim 8 caràcters, una majúscula, una minúscula, un número i un símbol",
