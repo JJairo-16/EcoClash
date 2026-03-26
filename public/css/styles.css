@@ -107,63 +107,64 @@ body::after {
 
 /* ========== CAPÇALERA I NAVEGACIÓ ========== */
 .header {
-	background-color: var(--deep-forest);
+	background-color: rgba(11, 32, 24, 0.92);
 	border-bottom: 2px solid rgba(204, 255, 0, 0.1);
-	padding: var(--spacing-md) var(--spacing-lg);
-	margin: var(--spacing-md) var(--spacing-lg);
-	border-radius: var(--radius-lg);
+	padding: 0.55rem var(--spacing-lg);
+	margin: 0.4rem var(--spacing-lg);
+	border-radius: calc(var(--radius-lg) - 4px);
 	position: sticky;
 	top: 0;
 	z-index: 1000;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+	backdrop-filter: blur(8px);
+	transition:
+		padding 0.35s ease,
+		border-radius 0.35s ease,
+		box-shadow 0.35s ease,
+		background-color 0.35s ease;
 }
 
 .navbar {
 	max-width: 1200px;
 	margin: 0 auto;
-	padding: 0;
+	padding: 0.2rem 0;
 }
 
 .navbar-container {
-	position: relative;
-	display: flex;
+	display: grid;
+	grid-template-columns: auto 1fr auto;
 	align-items: center;
-	justify-content: center;
-	gap: var(--spacing-md);
 }
 
+/* Logo */
 .navbar-logo {
-	position: absolute;
-	left: 0;
-	top: 50%;
-	transform: translateY(-50%);
-	display: block;
-	width: auto;
-	height: 70px;
-	overflow: hidden;
-	padding-left: 0.5rem;
+	display: flex;
+	align-items: center;
+	height: 54px;
+	padding-left: 0.25rem;
 }
 
 .navbar-logo-img {
-	height: 100%;
+	height: 78px;
 	width: auto;
 	display: block;
 	transform-origin: center center;
-	transition: transform 0.25s ease-in-out;
+	transition: transform 0.35s ease;
 }
 
 .navbar-logo:hover .navbar-logo-img {
-	transform: scale(1.32);
+	transform: scale(1.12);
 }
 
+/* Menú */
 .navbar-menu {
 	display: flex;
 	list-style: none;
-	gap: var(--spacing-lg);
-	margin: 0 auto;
+	gap: calc(var(--spacing-lg) * 0.8);
+	margin: 0;
 	padding: 0;
-	justify-content: center;
 	align-items: center;
+	justify-self: center;
 }
 
 .navbar-item {
@@ -174,7 +175,8 @@ body::after {
 	color: var(--pure-white);
 	text-decoration: none;
 	font-weight: 700;
-	padding: var(--spacing-xs) var(--spacing-sm);
+	font-size: 0.95rem;
+	padding: 0.45rem 0.7rem;
 	border-radius: var(--radius-md);
 	position: relative;
 	transition:
@@ -193,10 +195,10 @@ body::after {
 .navbar-link.active::after {
 	content: "";
 	position: absolute;
-	bottom: -12px;
+	bottom: -8px;
 	left: 50%;
 	transform: translateX(-50%);
-	width: 20px;
+	width: 16px;
 	height: 2px;
 	background-color: var(--electric-lime);
 	border-radius: 2px;
