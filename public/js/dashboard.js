@@ -220,11 +220,13 @@ function createActiveQuestCard({
 }
 
 function getBadge(state) {
-    if (state === MISSION_STATES.IN_PROGRESS)
-        return `<span class="badge badge-active">Actiu</span>`;
+    if (state === MISSION_STATES.IN_PROGRESS) {
+        return `<span class="badge badge-active">Activa</span>`;
+    }
 
-    if (state === MISSION_STATES.COMPLETED)
-        return `<span class="badge badge-active">Completat</span>`;
+    if (state === MISSION_STATES.COMPLETED) {
+        return `<span class="badge badge-completed">Completada</span>`;
+    }
 
     return "";
 }
@@ -339,12 +341,16 @@ async function handleStartMission(card) {
     card.dataset.missionState = MISSION_STATES.IN_PROGRESS;
 
     const header = card.querySelector(".challenge-header");
-    if (!header.querySelector(".badge-active")) {
-        header.insertAdjacentHTML(
-            "beforeend",
-            `<span class="badge badge-active">Actiu</span>`
-        );
+    const existingBadge = header?.querySelector(".badge");
+
+    if (existingBadge) {
+        existingBadge.remove();
     }
+
+    header?.insertAdjacentHTML(
+        "beforeend",
+        `<span class="badge badge-active">Activa</span>`
+    );
 
     const actions = card.querySelector(".challenge-actions");
     if (actions) {
@@ -486,6 +492,11 @@ function updateMissionCardProgress(card, {
             existingBadge.remove();
         }
 
+        header?.insertAdjacentHTML(
+            "beforeend",
+            `<span class="badge badge-completed">Completada</span>`
+        );
+
         if (actions) {
             actions.remove();
         }
@@ -493,10 +504,15 @@ function updateMissionCardProgress(card, {
         return;
     }
 
-    if (header && !header.querySelector(".badge-active")) {
+    if (header) {
+        const existingBadge = header.querySelector(".badge");
+        if (existingBadge) {
+            existingBadge.remove();
+        }
+
         header.insertAdjacentHTML(
             "beforeend",
-            `<span class="badge badge-active">Actiu</span>`
+            `<span class="badge badge-active">Activa</span>`
         );
     }
 

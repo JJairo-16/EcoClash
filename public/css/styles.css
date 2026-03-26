@@ -163,6 +163,7 @@ body::after {
 	margin: 0 auto;
 	padding: 0;
 	justify-content: center;
+	align-items: center;
 }
 
 .navbar-item {
@@ -263,8 +264,21 @@ body::after {
 }
 
 .badge-active {
-	background-color: var(--eco-mint);
-	color: var(--deep-forest);
+	background-color: rgba(74, 222, 128, 0.2);
+	color: #86efac;
+	border: 1px solid rgba(134, 239, 172, 0.35);
+	margin-left: 8px;
+}
+
+.badge-completed {
+	background: linear-gradient(
+		135deg,
+		rgba(255, 215, 0, 0.2),
+		rgba(255, 193, 7, 0.15)
+	);
+	color: #ffd700;
+	border: 1px solid rgba(255, 215, 0, 0.7);
+	box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
 	margin-left: 8px;
 }
 
@@ -500,4 +514,14 @@ body::after {
 		min-width: 40px;
 		height: 40px;
 	}
+}
+
+#log-out {
+	margin-left: var(--spacing-lg);
+}
+
+#log-out:hover {
+	background-color: rgba(254, 24, 24, 0.12);
+	border-color: rgba(254, 24, 24, 0.8);
+	color: rgba(254, 24, 24, 0.9);
 }
