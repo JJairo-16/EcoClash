@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="EcoClash - Accés denegat">
+  <meta name="theme-color" content="#1A2F25">
+  <title>403 - Accés denegat | EcoClash</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/error.css">
+</head>
+
+<body>
+
+  <main class="main-content error-section">
+
+    <!-- Animación -->
+    <div class="error-animation">
+      <div class="error-code">403</div>
+      <div class="error-icon">🔒</div>
+    </div>
+
+    <!-- Contenido -->
+    <div class="error-content">
+      <h1 class="error-title">Accés denegat</h1>
+
+      <p class="error-description">
+        No tens permisos per accedir a aquesta pàgina.
+        Si creus que això és un error, contacta amb l'administrador o torna enrere.
+      </p>
+
+      <!-- Ilustración -->
+      <div class="error-illustration">
+        <img src="img/logo.webp" alt="EcoClash Logo" class="error-logo">
+        <div class="plant-text">Zona protegida</div>
+      </div>
+
+      <!-- Botones -->
+      <div class="error-actions">
+        <button class="btn btn-primary" id="home-btn">
+          Anar al Dashboard
+        </button>
+        <button class="btn btn-secondary" id="back-btn">
+          Tornar enrere
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module" src="./js/error.js"></script>
+</body>
+
+</html>
