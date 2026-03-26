@@ -6,7 +6,7 @@ import {
 
 import { selectById, setById } from "./firestore.js";
 import { addUserExperience } from "./user-data-lib.js";
-import { setCachedDailyMissions } from "./cache/DailyMissionsCache.js";
+import { setCachedDailyMissions, getCachedDailyMissions } from "./cache/DailyMissionsCache.js";
 
 const USER_DATA_COLLECTION = "userData";
 const USER_DAILY_MISSIONS_COLLECTION = "userDailyMissions";

@@ -1,7 +1,7 @@
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 import { auth } from "./config.js";
-import { redirect } from "./redirector.js";
+import { redirect } from "./components/redirector.js";
 
 import { getUserData } from "./lib/user-data-lib.js";
 import { updateDailyMissionsIfNeeded } from "./lib/random-quest-selector.js";
@@ -44,17 +44,13 @@ onAuthStateChanged(auth, async (user) => {
             return;
         }
 
-        updateUI(userData);
+        updateExperienceUI(userData);
         await updateDailyMissionsIfNeeded(savedUid);
         await buildQuests();
     } catch (error) {
         console.error("Error en carregar les dades de l'usuari:", error);
     }
 });
-
-function updateUI(userData) {
-    updateExperienceUI(userData);
-}
 
 async function buildQuests() {
     if (!dom.questsContainer || !savedUid) return;
@@ -178,10 +174,7 @@ function createActiveQuestCard({
     const safeDescription = escapeHtml(description);
     const safeMissionId = escapeHtml(missionId);
 
-    const badgeHtml =
-        state === MISSION_STATES.IN_PROGRESS
-            ? `<span class="badge badge-active">Actiu</span>`
-            : "";
+    const badgeHtml = getBadge(state);
 
     const progressHtml = `
         <div class="progress-bar mt-3">
@@ -192,30 +185,48 @@ function createActiveQuestCard({
         </p>
     `;
 
-    const actionsHtml = getMissionActionsHtml(state, safeUnit, allowDecimals);
+    const actionsHtml = getMissionActionsHtml(
+        state,
+        safeUnit,
+        allowDecimals,
+        safeCurrent,
+        safeTotal
+    );
 
     return `
-        <section class="dashboard-section">
-            <div 
-                class="challenge-card card"
-                data-mission-id="${safeMissionId}"
-                data-mission-state="${state}"
-                data-allow-decimals="${allowDecimals}"
-                data-unit="${safeUnit}"
-            >
-                <div class="challenge-header">
-                    <h3 class="challenge-title">${safeName}</h3>
-                    ${badgeHtml}
-                </div>
-
-                <p class="challenge-description">${safeDescription}</p>
-
-                ${progressHtml}
-
-                ${actionsHtml}
+    <section class="dashboard-section">
+        <div 
+            class="challenge-card card"
+            data-mission-id="${safeMissionId}"
+            data-mission-state="${state}"
+            data-allow-decimals="${allowDecimals}"
+            data-unit="${safeUnit}"
+            data-current="${safeCurrent}"
+            data-total="${safeTotal}"
+        >
+            <div class="challenge-header">
+                <h3 class="challenge-title">${safeName}</h3>
+                ${badgeHtml}
             </div>
-        </section>
-    `;
+
+            <p class="challenge-description">${safeDescription}</p>
+
+            ${progressHtml}
+
+            ${actionsHtml}
+        </div>
+    </section>
+`;
+}
+
+function getBadge(state) {
+    if (state === MISSION_STATES.IN_PROGRESS)
+        return `<span class="badge badge-active">Actiu</span>`;
+
+    if (state === MISSION_STATES.COMPLETED)
+        return `<span class="badge badge-active">Completat</span>`;
+
+    return "";
 }
 
 function getMissionInputConfig(allowDecimals) {
@@ -224,7 +235,13 @@ function getMissionInputConfig(allowDecimals) {
         : { min: "1", step: "1" };
 }
 
-function getMissionActionsHtml(state, unit, allowDecimals = false) {
+function getMissionActionsHtml(
+    state,
+    unit,
+    allowDecimals = false,
+    current = 0,
+    total = 0
+) {
     if (state === MISSION_STATES.NOT_STARTED) {
         return `
             <div class="challenge-actions">
@@ -240,6 +257,10 @@ function getMissionActionsHtml(state, unit, allowDecimals = false) {
 
     if (state === MISSION_STATES.IN_PROGRESS) {
         const { min, step } = getMissionInputConfig(allowDecimals);
+        const remaining = Math.max(0, Number(total) - Number(current));
+        const max = allowDecimals
+            ? remaining.toFixed(2)
+            : String(Math.floor(remaining));
 
         return `
             <div class="challenge-actions">
@@ -250,6 +271,7 @@ function getMissionActionsHtml(state, unit, allowDecimals = false) {
                         data-number-input
                         placeholder="Introdueix ${unit || "valor"}"
                         min="${min}"
+                        max="${max}"
                         step="${step}"
                     >
                     <div class="number-badges">
@@ -311,6 +333,8 @@ async function handleStartMission(card) {
     const missionId = card.dataset.missionId;
     const allowDecimals = card.dataset.allowDecimals === "true";
     const unit = card.dataset.unit || "";
+    const current = Number(card.dataset.current) || 0;
+    const total = Number(card.dataset.total) || 0;
 
     card.dataset.missionState = MISSION_STATES.IN_PROGRESS;
 
@@ -327,12 +351,13 @@ async function handleStartMission(card) {
         actions.outerHTML = getMissionActionsHtml(
             MISSION_STATES.IN_PROGRESS,
             unit,
-            allowDecimals
+            allowDecimals,
+            current,
+            total
         );
         setupNumberControlsInContainer(card);
     }
 
-    console.log("Misión iniciada:", missionId);
     await startUserMission(savedUid, missionId);
 }
 
@@ -342,24 +367,51 @@ async function handleRegisterMissionAction(card) {
     const missionId = card.dataset.missionId;
     const input = card.querySelector(".js-mission-progress-input");
     const rawValue = input?.value?.trim() ?? "";
-    const amount = Number(rawValue);
+
+    const current = Number(card.dataset.current) || 0;
+    const total = Number(card.dataset.total) || 0;
+    const remaining = Math.max(0, total - current);
 
     if (!missionId) {
         console.error("No s'ha trobat el missionId de la targeta.");
         return;
     }
 
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (remaining <= 0) {
+        console.warn("La missió ja està completada.");
+        return;
+    }
+
+    const enteredAmount = Number(rawValue);
+
+    if (!Number.isFinite(enteredAmount) || enteredAmount <= 0) {
         console.warn("La quantitat introduïda no és vàlida.");
         input?.focus();
         return;
     }
 
+    const allowDecimals = card.dataset.allowDecimals === "true";
+    let amountToSubmit = Math.min(enteredAmount, remaining);
+
+    if (!allowDecimals) {
+        amountToSubmit = Math.floor(amountToSubmit);
+    }
+
+    if (!Number.isFinite(amountToSubmit) || amountToSubmit <= 0) {
+        console.warn("La quantitat ajustada no és vàlida.");
+        input?.focus();
+        return;
+    }
+
     try {
+        if (input && amountToSubmit !== enteredAmount) {
+            input.value = String(amountToSubmit);
+        }
+
         const updatedMission = await addProgressToUserMission(
             savedUid,
             missionId,
-            amount
+            amountToSubmit
         );
 
         updateMissionCardProgress(card, {
@@ -368,6 +420,12 @@ async function handleRegisterMissionAction(card) {
             unit: card.dataset.unit || "",
             allowDecimals: updatedMission.allowDecimals === true
         });
+
+        const updatedUserData = await getUserData(savedUid);
+
+        if (updatedUserData) {
+            updateExperienceUI(updatedUserData);
+        }
 
         if (input) {
             input.value = "";
@@ -395,6 +453,7 @@ function updateMissionCardProgress(card, {
         100
     );
 
+    const remaining = Math.max(0, safeTotal - safeCurrent);
     const isCompleted = safeCurrent >= safeTotal;
     const nextState = isCompleted
         ? MISSION_STATES.COMPLETED
@@ -409,7 +468,8 @@ function updateMissionCardProgress(card, {
     const progressFill = card.querySelector(".progress-fill");
     const progressText = card.querySelector(".progress-text");
     const header = card.querySelector(".challenge-header");
-    const actions = card.querySelector(".challenge-actions");
+    let actions = card.querySelector(".challenge-actions");
+    let input = card.querySelector(".js-mission-progress-input");
 
     if (progressFill) {
         progressFill.style.width = `${safePercentage}%`;
@@ -429,20 +489,45 @@ function updateMissionCardProgress(card, {
         if (actions) {
             actions.remove();
         }
-    } else {
-        if (header && !header.querySelector(".badge-active")) {
-            header.insertAdjacentHTML(
-                "beforeend",
-                `<span class="badge badge-active">Actiu</span>`
-            );
-        }
 
-        if (!actions) {
-            card.insertAdjacentHTML(
-                "beforeend",
-                getMissionActionsHtml(MISSION_STATES.IN_PROGRESS, unit, allowDecimals)
-            );
-            setupNumberControlsInContainer(card);
+        return;
+    }
+
+    if (header && !header.querySelector(".badge-active")) {
+        header.insertAdjacentHTML(
+            "beforeend",
+            `<span class="badge badge-active">Actiu</span>`
+        );
+    }
+
+    if (!actions) {
+        card.insertAdjacentHTML(
+            "beforeend",
+            getMissionActionsHtml(
+                MISSION_STATES.IN_PROGRESS,
+                unit,
+                allowDecimals,
+                safeCurrent,
+                safeTotal
+            )
+        );
+        setupNumberControlsInContainer(card);
+
+        input = card.querySelector(".js-mission-progress-input");
+    }
+
+    if (input) {
+        const { min, step } = getMissionInputConfig(allowDecimals);
+
+        input.min = min;
+        input.step = step;
+        input.max = allowDecimals
+            ? String(remaining)
+            : String(Math.floor(remaining));
+
+        const currentValue = Number(input.value);
+        if (Number.isFinite(currentValue) && currentValue > remaining) {
+            input.value = remaining > 0 ? String(remaining) : "";
         }
     }
 }

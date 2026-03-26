@@ -1,6 +1,7 @@
-import { auth } from './config.js';
+import { auth } from '../config.js';
 
 const LOGIN = 'login.html';
+const DASHBOARD = 'dashboard.html';
 
 function go(path) {
     const current = new URL(globalThis.location.href);
@@ -11,10 +12,16 @@ function go(path) {
     globalThis.location.href = target.href;
 }
 
-export async function redirect(url = LOGIN) {
+export async function redirect(url = LOGIN, invert = false) {
     if (auth.currentUser) {
         go(url);
     } else {
         go(LOGIN);
+    }
+}
+
+export async function redirectToDashboard() {
+    if (auth.currentUser) {
+        go(DASHBOARD);
     }
 }
