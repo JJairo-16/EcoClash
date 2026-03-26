@@ -2,19 +2,23 @@
 <html lang="ca">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EcoClash - Inici de sessió</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login / Registre</title>
+
+  <!-- Flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+
+  <!-- Tu CSS -->
+  <link rel="stylesheet" href="./css/login.css" />
 </head>
 
 <body>
-
   <header class="header">
     <nav class="navbar">
       <div class="navbar-container">
         <a href="login.html" class="navbar-logo">
-          <img src="img/EcoClash.webp" class="navbar-logo-img">
+          <img src="img/EcoClash.webp" class="navbar-logo-img" alt="EcoClash Logo">
         </a>
 
         <ul class="navbar-menu">
@@ -22,85 +26,92 @@
             <span class="navbar-link active" style="cursor:default;">Inici de sessió</span>
           </li>
           <li class="navbar-item">
-            <!-- 🔗 BOTÓN AYUDA FUNCIONAL -->
-            <a href="help.html" class="btn btn-secondary">Ajuda</a>
+            <a href="help.html" class="navbar-link active">Ajuda</a>
           </li>
         </ul>
       </div>
     </nav>
   </header>
 
-  <main class="main-content">
-    <section class="dashboard" style="max-width:1000px; margin:0 auto;">
-
-      <div class="welcome-card card" style="margin-bottom:32px;">
-        <h1>ACCÉS A ECOCLASH</h1>
-        <p>Inicia sessió o crea un compte nou.</p>
-      </div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px;">
+  <main class="auth-page">
+    <section class="auth-card">
+      <div class="forms-wrapper">
 
         <!-- LOGIN -->
-        <section>
-          <div class="card" style="padding:24px;">
-            <h2 style="margin-bottom:20px;">Inici de sessió</h2>
+        <div class="form-block">
+          <h2 class="form-title">Iniciar sessió</h2>
 
-            <form id="login-form">
+          <form id="login-form" novalidate>
+            <input id="login-user" class="form-input" type="email" placeholder="Correu electrònic"
+              autocomplete="email" />
 
-              <input id="login-user" type="email" class="form-input" placeholder="Correu electrònic"
-                style="margin-bottom:16px;">
-              <input id="login-pass" type="password" class="form-input" placeholder="Contrasenya"
-                style="margin-bottom:24px;">
+            <input id="login-pass" class="form-input" type="password" placeholder="Contrasenya"
+              autocomplete="current-password" />
 
-              <div style="display:flex; justify-content:center;">
-                <button class="btn btn-primary" type="submit" style="width:200px;">
-                  Iniciar sessió
-                </button>
-              </div>
+            <button class="btn btn-primary" type="submit">
+              Entrar
+            </button>
 
-              <div id="login-msg" style="margin-top:16px; text-align:center;"></div>
-            </form>
-          </div>
-        </section>
+            <div id="login-msg" class="message-slot"></div>
+          </form>
+        </div>
 
         <!-- REGISTER -->
-        <section>
-          <div class="card" style="padding:24px;">
-            <h2 style="margin-bottom:20px;">Registrar-se</h2>
+        <div class="form-block">
+          <h2 class="form-title">Registrar-se</h2>
 
-            <form id="register-form">
+          <form id="register-form" novalidate>
+            <input id="reg-username" class="form-input" type="text" placeholder="Username" autocomplete="username" />
 
-              <input id="reg-username" class="form-input" placeholder="Username" style="margin-bottom:12px;">
-              <input id="reg-name" class="form-input" placeholder="Nom" style="margin-bottom:12px;">
-              <input id="reg-surname" class="form-input" placeholder="Cognom" style="margin-bottom:12px;">
-              <input id="reg-lastname" class="form-input" placeholder="Segon cognom (opcional)"
-                style="margin-bottom:12px;">
-              <input id="reg-phone" class="form-input" placeholder="Telèfon (opcional)" style="margin-bottom:12px;">
-              <input id="reg-birth" type="date" class="form-input" style="margin-bottom:12px;">
-              <input id="reg-email" type="email" class="form-input" placeholder="Correu electrònic"
-                style="margin-bottom:12px;">
-              <input id="reg-pass" type="password" class="form-input" placeholder="Contrasenya"
-                style="margin-bottom:12px;">
-              <input id="reg-pass2" type="password" class="form-input" placeholder="Repetir contrasenya"
-                style="margin-bottom:24px;">
+            <input id="reg-name" class="form-input" type="text" placeholder="Nom" autocomplete="given-name" />
 
-              <div style="display:flex; justify-content:center;">
-                <button class="btn btn-primary" type="submit" style="width:200px;">
-                  Registrar-me
-                </button>
-              </div>
+            <input id="reg-surname" class="form-input" type="text" placeholder="Cognom" autocomplete="family-name" />
 
-              <div id="reg-msg" style="margin-top:16px; text-align:center;"></div>
-            </form>
-          </div>
-        </section>
+            <input id="reg-lastname" class="form-input" type="text" placeholder="Segon cognom (opcional)" />
+
+            <input id="reg-phone" class="form-input" type="tel" placeholder="Telèfon (opcional)" autocomplete="tel" />
+
+            <input id="reg-birth" class="form-input" type="text" placeholder="dd/mm/aaaa" autocomplete="bday"
+              readonly />
+
+            <input id="reg-email" class="form-input input-span-2" type="email" placeholder="Correu electrònic"
+              autocomplete="email" />
+
+            <input id="reg-pass" class="form-input" type="password" placeholder="Contrasenya"
+              autocomplete="new-password" />
+
+            <input id="reg-pass2" class="form-input" type="password" placeholder="Repetir contrasenya"
+              autocomplete="new-password" />
+
+            <div class="submit-row input-span-2">
+              <button class="btn btn-primary" type="submit">
+                Registrar-me
+              </button>
+            </div>
+
+            <div id="reg-msg" class="message-slot input-span-2"></div>
+          </form>
+        </div>
 
       </div>
     </section>
   </main>
 
-  <script src="./js/login.js"></script>
+  <!-- Flatpickr -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
+  <!-- Tu JS -->
+  <script>
+    flatpickr("#reg-birth", {
+      dateFormat: "d/m/Y",
+      maxDate: "today",
+      disableMobile: true,
+      allowInput: false,
+      clickOpens: true,
+      monthSelectorType: "static"
+    });
+  </script>
+  <script type="module" src="./js/login.js"></script>
 </body>
 
 </html>

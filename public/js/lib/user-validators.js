@@ -134,8 +134,27 @@ export function validateBirthDate(date) {
     throw new TypeError("La data no és vàlida.");
   }
 
-  if (date.getTime() > Date.now()) {
-    throw new Error("La data no pot ser futura.");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minBirthDate = new Date(1950, 0, 1);
+  const minAgeDate = new Date(
+    today.getFullYear() - 14,
+    today.getMonth(),
+    today.getDate()
+  );
+  minAgeDate.setHours(0, 0, 0, 0);
+
+  if (date.getTime() > today.getTime()) {
+    throw new Error("La data de naixement no pot ser futura.");
+  }
+
+  if (date.getTime() < minBirthDate.getTime()) {
+    throw new Error("La data de naixement no pot ser anterior a l'any 1950.");
+  }
+
+  if (date.getTime() > minAgeDate.getTime()) {
+    throw new Error("Has de tenir com a mínim 14 anys.");
   }
 
   return date;
