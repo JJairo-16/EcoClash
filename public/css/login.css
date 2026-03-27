@@ -42,12 +42,58 @@ body {
   min-height: 100vh;
 }
 
+/* ===== ANIMACIONES ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .auth-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 28px;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .auth-card {
@@ -59,6 +105,7 @@ body {
     0 20px 60px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.02);
   padding: 32px;
+  animation: fadeInScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .forms-wrapper {
@@ -73,6 +120,18 @@ body {
   border-radius: 20px;
   padding: 28px;
   backdrop-filter: blur(8px);
+  animation: slideInRight 0.7s ease-out;
+}
+
+.form-block:first-child {
+  animation-name: slideInLeft;
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
+}
+
+.form-block:last-child {
+  animation-delay: 0.2s;
+  animation-fill-mode: both;
 }
 
 .form-title {
@@ -81,6 +140,7 @@ body {
   line-height: 1.1;
   font-weight: 800;
   color: var(--white);
+  animation: fadeInUp 0.6s ease-out 0.3s both;
 }
 
 #login-form {
@@ -88,11 +148,65 @@ body {
   gap: 16px;
 }
 
+#login-form .form-input {
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+#login-form .form-input:nth-child(1) {
+  animation-delay: 0.4s;
+}
+
+#login-form .form-input:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+#login-form .submit-row {
+  animation: fadeInUp 0.5s ease-out 0.6s both;
+}
+
 #register-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 22px;
   row-gap: 16px;
+}
+
+#register-form .form-input {
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+#register-form .form-input:nth-child(1) {
+  animation-delay: 0.5s;
+}
+
+#register-form .form-input:nth-child(2) {
+  animation-delay: 0.55s;
+}
+
+#register-form .form-input:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+#register-form .form-input:nth-child(4) {
+  animation-delay: 0.65s;
+}
+
+#register-form .form-input:nth-child(5) {
+  animation-delay: 0.7s;
+}
+
+#register-form .form-input:nth-child(6) {
+  animation-delay: 0.75s;
+}
+
+#register-form .input-span-2 {
+  animation: fadeInUp 0.5s ease-out 0.8s both;
+}
+
+#register-form .submit-row {
+  animation: fadeInUp 0.5s ease-out 0.85s both;
 }
 
 .input-span-2 {
@@ -810,6 +924,4 @@ input:-webkit-autofill:focus {
     padding: 7px 10px;
     font-size: 0.84rem;
   }
-  
-  
 }

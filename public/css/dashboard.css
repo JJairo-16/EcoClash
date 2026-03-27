@@ -2,202 +2,439 @@
    ECOCLASH - DASHBOARD
 ======================================== */
 
+/* ===== ANIMACIONES ===== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 /* ========== DASHBOARD ========== */
 .dashboard {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    animation: fadeInUp 0.6s ease-out 0.2s both;
 }
 
 .welcome-card {
-	background: linear-gradient(
-		135deg,
-		rgba(76, 222, 128, 0.15) 0%,
-		rgba(204, 255, 0, 0.08) 100%
-	);
-	border: 1px solid rgba(204, 255, 0, 0.2);
-	padding: var(--spacing-lg);
-	text-align: center;
+    background: linear-gradient(
+        135deg,
+        rgba(76, 222, 128, 0.15) 0%,
+        rgba(204, 255, 0, 0.08) 100%
+    );
+    border: 1px solid rgba(204, 255, 0, 0.2);
+    padding: var(--spacing-lg);
+    text-align: center;
+    animation: fadeInUp 0.6s ease-out 0.3s both;
+    border-radius: var(--radius-lg);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .welcome-card h1 {
-	font-size: 32px;
-	color: var(--electric-lime);
-	margin-bottom: var(--spacing-sm);
+    font-size: 32px;
+    color: var(--electric-lime);
+    margin-bottom: var(--spacing-sm);
+    text-shadow:
+        0 0 6px rgba(204, 255, 0, 0.2),
+        0 0 12px rgba(204, 255, 0, 0.08);
 }
 
 .welcome-card p {
-	color: var(--grey-light);
-	font-size: var(--size-body);
+    color: var(--grey-light);
+    font-size: var(--size-body);
 }
 
 .dashboard-section {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    animation: fadeInUp 0.6s ease-out;
+    animation-fill-mode: both;
+    border-radius: var(--radius-lg);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.dashboard-section:nth-of-type(1) {
+    animation-delay: 0.4s;
+}
+
+.dashboard-section:nth-of-type(2) {
+    animation-delay: 0.5s;
+}
+
+.dashboard-section:nth-of-type(3) {
+    animation-delay: 0.6s;
+}
+
+.dashboard-section:nth-of-type(n+4) {
+    animation-delay: 0.7s;
 }
 
 .section-title {
-	font-size: var(--size-h3);
-	font-weight: 700;
-	color: var(--electric-lime);
-	margin: 0;
+    font-size: var(--size-h3);
+    font-weight: 700;
+    color: var(--electric-lime);
+    margin: 0;
+    text-shadow:
+        0 0 4px rgba(204, 255, 0, 0.15),
+        0 0 8px rgba(204, 255, 0, 0.06);
 }
 
 /* ========== PROGRÉS ========== */
 .progress-card {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    background: linear-gradient(135deg, #1b2836 0%, #23372c 100%);
+    border: 1px solid rgba(204, 255, 0, 0.1);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    animation: fadeInUp 0.6s ease-out;
+    animation-fill-mode: both;
+    transition: var(--transition-fast);
+}
+
+.progress-card:hover {
+    border-color: rgba(204, 255, 0, 0.25);
+    box-shadow:
+        0 24px 72px rgba(0, 0, 0, 0.42),
+        0 0 24px rgba(204, 255, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transform: translateY(-2px);
+}
+
+.progress-card:nth-child(1) {
+    animation-delay: 0.45s;
+}
+
+.progress-card:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+.progress-card:nth-child(3) {
+    animation-delay: 0.55s;
+}
+
+.progress-card:nth-child(n+4) {
+    animation-delay: 0.6s;
 }
 
 .progress-header {
-	display: flex;
-	justify-content: space-between;
-	font-weight: 700;
-	font-size: var(--size-body);
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: var(--size-body);
 }
 
 .progress-label {
-	color: var(--electric-lime);
+    color: var(--electric-lime);
+    transition: color 0.35s ease, text-shadow 0.35s ease;
 }
 
 .progress-percentage {
-	color: var(--eco-mint);
+    color: var(--eco-mint);
+    transition: color 0.35s ease, text-shadow 0.35s ease;
 }
 
 .progress-bar {
-	width: 100%;
-	height: 10px;
-	background-color: rgba(31, 41, 55, 0.6);
-	border-radius: var(--radius-md);
-	overflow: hidden;
+    width: 100%;
+    height: 10px;
+    background-color: rgba(31, 41, 55, 0.6);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .progress-fill {
-	height: 100%;
-	background: linear-gradient(90deg, var(--eco-mint), var(--electric-lime));
-	border-radius: var(--radius-md);
-	transition: width 0.5s ease-in-out;
+    height: 100%;
+    background: linear-gradient(90deg, var(--eco-mint), var(--electric-lime));
+    border-radius: var(--radius-md);
+    transition: width 0.5s ease-in-out;
+    box-shadow: 0 0 8px rgba(204, 255, 0, 0.15);
 }
 
 .progress-card.level-up-active .progress-label,
 .progress-card.level-up-active .progress-percentage {
-	color: var(--level-up-gold);
-	text-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
-	transition:
-		color 0.35s ease,
-		text-shadow 0.35s ease;
+    color: var(--level-up-gold);
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+    transition:
+        color 0.35s ease,
+        text-shadow 0.35s ease;
 }
 
 .progress-card.level-up-active .progress-fill {
-	background: linear-gradient(90deg, var(--level-up-gold-soft), var(--level-up-gold));
-	box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+    background: linear-gradient(90deg, var(--level-up-gold-soft), var(--level-up-gold));
+    box-shadow:
+        0 0 16px rgba(255, 215, 0, 0.35),
+        0 0 24px rgba(255, 215, 0, 0.2);
 }
 
 .progress-text {
-	font-size: var(--size-micro);
-	color: var(--grey-light);
-	margin: 0;
+    font-size: var(--size-micro);
+    color: var(--grey-light);
+    margin: 0;
 }
 
 /* ========== REPTES ========== */
 .quests {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: fadeInUp 0.6s ease-out 0.55s both;
 }
 
 .challenge-card {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: linear-gradient(135deg, #1b2836 0%, #23372c 100%);
+    border: 1px solid rgba(204, 255, 0, 0.1);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    animation: fadeInUp 0.6s ease-out;
+    animation-fill-mode: both;
+    transition: var(--transition-fast);
+}
+
+.challenge-card:hover {
+    border-color: rgba(204, 255, 0, 0.25);
+    box-shadow:
+        0 24px 72px rgba(0, 0, 0, 0.42),
+        0 0 24px rgba(204, 255, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transform: translateY(-2px);
+}
+
+.challenge-card:nth-child(1) {
+    animation-delay: 0.6s;
+}
+
+.challenge-card:nth-child(2) {
+    animation-delay: 0.65s;
+}
+
+.challenge-card:nth-child(3) {
+    animation-delay: 0.7s;
+}
+
+.challenge-card:nth-child(n+4) {
+    animation-delay: 0.75s;
 }
 
 .challenge-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 2px;
 }
 
 .challenge-title {
-	font-size: var(--size-h3);
-	color: var(--electric-lime);
-	margin: 0;
-	font-weight: 700;
-	line-height: 1.2;
-	flex: 1;
+    font-size: var(--size-h3);
+    color: var(--electric-lime);
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.2;
+    flex: 1;
+    text-shadow:
+        0 0 4px rgba(204, 255, 0, 0.15),
+        0 0 8px rgba(204, 255, 0, 0.06);
 }
 
 .challenge-description {
-	color: var(--pure-white);
-	font-size: var(--size-body);
-	margin: 0;
-	line-height: 1.35;
+    color: var(--pure-white);
+    font-size: var(--size-body);
+    margin: 0;
+    line-height: 1.35;
 }
 
 .challenge-actions {
-	display: flex;
-	gap: var(--spacing-sm);
-	flex-wrap: wrap;
-	margin-top: 6px;
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    margin-top: 6px;
 }
 
 .challenge-actions .number-control-wrapper {
-	flex: 1 1 280px;
-	max-width: 420px;
+    flex: 1 1 280px;
+    max-width: 420px;
 }
 
 .challenge-actions .js-register-action-btn {
-	flex: 0 0 auto;
+    flex: 0 0 auto;
+    transition: var(--transition-fast);
+}
+
+.challenge-actions .js-register-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 0 24px rgba(204, 255, 0, 0.35),
+        0 12px 32px rgba(204, 255, 0, 0.18);
 }
 
 /* ========== CALCULADORA ========== */
 .calculator-card {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-md);
-	overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    overflow: hidden;
+    background: linear-gradient(135deg, #1b2836 0%, #23372c 100%);
+    border: 1px solid rgba(204, 255, 0, 0.1);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    animation: fadeInUp 0.6s ease-out 0.65s both;
+    transition: var(--transition-fast);
+}
+
+.calculator-card:hover {
+    border-color: rgba(204, 255, 0, 0.25);
+    box-shadow:
+        0 24px 72px rgba(0, 0, 0, 0.42),
+        0 0 24px rgba(204, 255, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transform: translateY(-2px);
 }
 
 .carbon-result {
-	background-color: rgba(74, 222, 128, 0.1);
-	border: 1px solid rgba(74, 222, 128, 0.3);
-	border-radius: var(--radius-lg);
-	padding: var(--spacing-md);
-	text-align: center;
-	animation: slideDown 0.3s ease-in-out;
+    background-color: rgba(74, 222, 128, 0.1);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    text-align: center;
+    animation: slideDown 0.3s ease-in-out;
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.15);
 }
 
 @keyframes slideDown {
-	from {
-		opacity: 0;
-		transform: translateY(-10px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .carbon-value {
-	font-size: 28px;
-	font-weight: 700;
-	color: var(--electric-lime);
-	margin: var(--spacing-sm) 0 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--electric-lime);
+    margin: var(--spacing-sm) 0 0;
+    text-shadow:
+        0 0 6px rgba(204, 255, 0, 0.2),
+        0 0 12px rgba(204, 255, 0, 0.08);
 }
 
 /* ========== RESPONSIVE DASHBOARD ========== */
 @media (max-width: 640px) {
-	.challenge-actions {
-		align-items: stretch;
+    .welcome-card {
+        animation-delay: 0.2s;
+    }
+
+    .dashboard-section:nth-of-type(1) {
+        animation-delay: 0.3s;
+    }
+
+    .dashboard-section:nth-of-type(2) {
+        animation-delay: 0.4s;
+    }
+
+    .dashboard-section:nth-of-type(3) {
+        animation-delay: 0.5s;
+    }
+
+    .dashboard-section:nth-of-type(n+4) {
+        animation-delay: 0.6s;
+    }
+
+    .challenge-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .challenge-actions .number-control-wrapper,
+    .challenge-actions .js-register-action-btn {
+        width: 100%;
+        max-width: none;
+    }
+
+    .progress-card:nth-child(1) {
+        animation-delay: 0.35s;
+    }
+
+    .progress-card:nth-child(2) {
+        animation-delay: 0.4s;
+    }
+
+    .progress-card:nth-child(3) {
+        animation-delay: 0.45s;
+    }
+
+    .progress-card:nth-child(n+4) {
+        animation-delay: 0.5s;
+    }
+
+    .challenge-card:nth-child(1) {
+        animation-delay: 0.5s;
+    }
+
+    .challenge-card:nth-child(2) {
+        animation-delay: 0.55s;
+    }
+
+    .challenge-card:nth-child(3) {
+        animation-delay: 0.6s;
+    }
+
+    .challenge-card:nth-child(n+4) {
+        animation-delay: 0.65s;
+    }
+
+    .calculator-card {
+        animation-delay: 0.55s;
+    }
+
+ #policy-privacity {
+		display: block;
+		margin-top: var(--spacing-sm);
+		text-align: center;
+		color: var(--grey-light);
+		font-size: var(--size-micro);
+		transition: color 0.3s ease;
 	}
 
-	.challenge-actions .number-control-wrapper,
-	.challenge-actions .js-register-action-btn {
-		width: 100%;
-		max-width: none;
+	.policy-privacity:hover {
+		color: var(--electric-lime);
 	}
 }
