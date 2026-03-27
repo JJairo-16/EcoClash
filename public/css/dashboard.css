@@ -81,6 +81,20 @@
 	transition: width 0.5s ease-in-out;
 }
 
+.progress-card.level-up-active .progress-label,
+.progress-card.level-up-active .progress-percentage {
+	color: var(--level-up-gold);
+	text-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+	transition:
+		color 0.35s ease,
+		text-shadow 0.35s ease;
+}
+
+.progress-card.level-up-active .progress-fill {
+	background: linear-gradient(90deg, var(--level-up-gold-soft), var(--level-up-gold));
+	box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+}
+
 .progress-text {
 	font-size: var(--size-micro);
 	color: var(--grey-light);

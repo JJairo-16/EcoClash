@@ -32,6 +32,8 @@ const BADGES = {
 
 let savedUid = null;
 let missionEventsBound = false;
+let previousExperienceState = null;
+let experienceAnimationQueue = Promise.resolve();
 
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -128,36 +130,120 @@ function mapMissionToCardConfig(mission) {
 }
 
 function updateExperienceUI(userData) {
+    const nextState = createExperienceState(userData);
+
+    experienceAnimationQueue = experienceAnimationQueue
+        .catch(() => undefined)
+        .then(async () => {
+            if (!previousExperienceState) {
+                renderExperienceState(nextState);
+                previousExperienceState = nextState;
+                return;
+            }
+
+            const didLevelUp = nextState.level > previousExperienceState.level;
+
+            if (!didLevelUp) {
+                renderExperienceState(nextState);
+                previousExperienceState = nextState;
+                return;
+            }
+
+            await animateLevelUp(previousExperienceState, nextState);
+            previousExperienceState = nextState;
+        });
+}
+
+function createExperienceState(userData) {
     const level = Number(userData.level) || 1;
     const experience = Number(userData.experience) || 0;
     const maxExperience = Number(userData.maxExperience) || 1;
 
-    const percentage = clamp(
-        Math.round((experience / maxExperience) * 100),
-        0,
-        100
-    );
+    return {
+        level,
+        experience,
+        maxExperience,
+        percentage: clamp(
+            Math.round((experience / maxExperience) * 100),
+            0,
+            100
+        ),
+        remainingPoints: Math.max(0, maxExperience - experience)
+    };
+}
 
-    const remainingPoints = Math.max(0, maxExperience - experience);
-
+function renderExperienceState(state) {
     const progressFill = dom.progressCard?.querySelector(".progress-fill");
     const progressText = dom.progressCard?.querySelector(".progress-text");
 
+    if (!state) return;
+
     if (dom.levelLabel) {
-        dom.levelLabel.textContent = `Nivell ${level}`;
+        dom.levelLabel.textContent = `Nivell ${state.level}`;
     }
 
     if (dom.levelBar) {
-        dom.levelBar.textContent = `${percentage}%`;
+        dom.levelBar.textContent = `${state.percentage}%`;
     }
 
     if (progressFill) {
-        progressFill.style.width = `${percentage}%`;
+        progressFill.style.width = `${state.percentage}%`;
     }
 
     if (progressText) {
-        progressText.textContent = `Pròxim nivell en ${remainingPoints} punts`;
+        progressText.textContent = `Pròxim nivell en ${state.remainingPoints} punts`;
     }
+}
+
+async function animateLevelUp(previousState, nextState) {
+    const progressFill = dom.progressCard?.querySelector(".progress-fill");
+    if (!dom.progressCard || !progressFill) {
+        renderExperienceState(nextState);
+        return;
+    }
+
+    renderExperienceState(previousState);
+    await nextFrame();
+
+    progressFill.style.width = "100%";
+    if (dom.levelBar) {
+        dom.levelBar.textContent = "100%";
+    }
+
+    await wait(550);
+
+    dom.progressCard.classList.add("level-up-active");
+    await wait(700);
+
+    renderExperienceState({
+        ...nextState,
+        percentage: 0,
+        remainingPoints: nextState.remainingPoints
+    });
+
+    await nextFrame();
+    progressFill.style.width = `${nextState.percentage}%`;
+    if (dom.levelBar) {
+        dom.levelBar.textContent = `${nextState.percentage}%`;
+    }
+
+    await wait(650);
+
+    dom.progressCard.classList.remove("level-up-active");
+}
+
+function wait(duration = 0) {
+    return new Promise((resolve) => {
+        globalThis.setTimeout(resolve, duration);
+    });
+}
+
+function nextFrame() {
+    return new Promise((resolve) => {
+        globalThis.requestAnimationFrame(() => {
+            globalThis.requestAnimationFrame(resolve);
+        });
+    });
 }
 
 function createActiveQuestCard({
