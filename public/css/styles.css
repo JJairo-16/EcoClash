@@ -240,6 +240,16 @@ body::after {
 	color: var(--grey-light);
 }
 
+.footer-content a {
+	color: var(--grey-light);
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+.footer-content a:hover {
+	color: var(--electric-lime);
+}
+
 /* ========== COMPONENTS REUTILITZABLES ========== */
 .card {
 	background-color: rgba(55, 65, 81, 0.5);
